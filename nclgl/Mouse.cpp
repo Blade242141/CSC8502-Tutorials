@@ -1,4 +1,5 @@
 #include "Mouse.h"
+#include <algorithm>
 Mouse::Mouse(HWND &hwnd)	{
 	ZeroMemory( buttons,	 sizeof(bool) * MOUSE_MAX );
 	ZeroMemory( holdButtons, sizeof(bool) * MOUSE_MAX );
