@@ -8,6 +8,6 @@ out Vertex {
 }	OUT;
 
 void main (void) {
-	gl_Position = vec4 (pos, 1.0)
+	gl_Position = vec4 (pos, 1.0);
 	OUT.colour = colour;
 }
