@@ -138,6 +138,9 @@
   <ItemGroup>
     <ClCompile Include="tutorial1.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="renderer.h" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
