@@ -129,7 +129,7 @@ void	Mesh::BufferData()	{
 
 Mesh* Mesh::GenerateTriangle() {
 	Mesh* m = new Mesh();
-	m->numVertices = 3;
+	m->numVertices = 5;
 
 	m->vertices = new Vector3[m->numVertices];
 	m->vertices[0] = Vector3(0.0f, 0.5f, 0.0f);
