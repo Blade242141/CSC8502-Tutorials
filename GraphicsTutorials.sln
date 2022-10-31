@@ -52,6 +52,12 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ZXEmulator", "ZXEmulator\ZX
 		{98D6B51B-CB0A-4389-ADC6-24082B967C3F} = {98D6B51B-CB0A-4389-ADC6-24082B967C3F}
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Shaders", "Shaders", "{48BB6DF6-0F6B-48BC-956C-9E886B6B8C24}"
+	ProjectSection(SolutionItems) = preProject
+		basicVertex.glsl = basicVertex.glsl
+		colourFragment.glsl = colourFragment.glsl
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
