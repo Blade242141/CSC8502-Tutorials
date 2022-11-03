@@ -19,7 +19,7 @@ public:
 
 	void UpdateCamera(float dt = 1.0f);
 
-	Matrix4 BuildVeiwMatrix();
+	Matrix4 BuildViewMatrix();
 
 	Vector3 const GetPosition() { return position; }
 	void SetPosition(Vector3 val) { position = val; }
