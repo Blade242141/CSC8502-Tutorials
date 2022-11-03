@@ -60,6 +60,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Shaders", "Shaders", "{48BB
 		basicVertex.glsl = basicVertex.glsl
 		colourFragment.glsl = colourFragment.glsl
 		MatrixVertex.glsl = MatrixVertex.glsl
+		TexturedFragment.glsl = TexturedFragment.glsl
+		TexturedVertex.glsl = TexturedVertex.glsl
 	EndProjectSection
 EndProject
 Global

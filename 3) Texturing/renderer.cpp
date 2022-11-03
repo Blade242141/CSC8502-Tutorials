@@ -35,3 +35,23 @@ void Renderer::RenderScene() {
 
 	triangle->Draw();
 }
+
+void Renderer::UpdateTextureMatrix(float value) {
+	Matrix4 push = Matrix4::Translation(Vector3(-0.5f, -0.5f, 0));
+	Matrix4 pop = Matrix4::Translation(Vector3(0.5f, 0.5f, 0));
+	Matrix4 rotation = Matrix4::Rotation(value, Vector3(0, 0, 1));
+	textureMatrix = pop * rotation * push;
+}
+
+void Renderer::ToggleRepeating() {
+	repeating != repeating;
+	SetTextureRepeating(texture, repeating);
+}
+
+void Renderer::ToggleFiltering() {
+	filtering != filtering;
+	glBindTexture(GL_TEXTURE_2D, texture);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filtering ? GL_LINEAR : GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filtering ? GL_LINEAR : GL_NEAREST);
+	glBindTexture(GL_TEXTURE_2D, 0);
+}
