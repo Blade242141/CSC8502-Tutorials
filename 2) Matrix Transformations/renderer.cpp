@@ -1,8 +1,6 @@
 #include "renderer.h"
 
 Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
-	camera = new Camera();
-
 	triangle = Mesh::GenerateTriangle();
 
 	matrixShader = new Shader("MatrixVertex.glsl", "colourFragment.glsl");
@@ -17,7 +15,6 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 }
 
 Renderer::~Renderer(void) {
-	delete camera;
 	delete triangle;
 	delete matrixShader;
 }
@@ -49,9 +46,4 @@ void Renderer::RenderScene() {
 		glUniformMatrix4fv(glGetUniformLocation(matrixShader->GetProgram(), "modelMatrix"), 1, false, modelMatrix.values);
 		triangle->Draw();
 	}
-}
-
-void Renderer::UpdateScene(float dt) {
-	camera->UpdateCamera(dt);
-	viewMatrix = camera->BuildViewMatrix();
 }
