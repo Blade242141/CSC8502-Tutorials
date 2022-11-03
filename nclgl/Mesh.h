@@ -42,6 +42,7 @@ enum MeshBuffer {
 class Mesh	{
 public:	
 	static Mesh* GenerateTriangle();
+	static Mesh* GenerateQuad();
 
 	struct SubMesh {
 		int start;
