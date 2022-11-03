@@ -44,12 +44,13 @@ void Renderer::UpdateTextureMatrix(float value) {
 }
 
 void Renderer::ToggleRepeating() {
-	repeating != repeating;
+	repeating = !repeating;
+	std::cout << "repeating = " << repeating << std::endl;
 	SetTextureRepeating(texture, repeating);
 }
 
 void Renderer::ToggleFiltering() {
-	filtering != filtering;
+	filtering = !filtering;
 	glBindTexture(GL_TEXTURE_2D, texture);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, filtering ? GL_LINEAR : GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, filtering ? GL_LINEAR : GL_NEAREST);
