@@ -7,13 +7,13 @@ public:
 	Renderer(Window& parent);
 	~Renderer(void);
 
-		void RenderScene() override;
+	void RenderScene() override;
 
-		void ToggleObject();
-		void ToggleDepth();
-		void ToggleAlphaBlend();
-		void ToggleBlendMode();
-		void MoveObject(float by);
+	void ToggleObject();
+	void ToggleDepth();
+	void ToggleAlphaBlend();
+	void ToggleBlendMode();
+	void MoveObject(float by);
 
 protected:
 	GLuint textures[2];
