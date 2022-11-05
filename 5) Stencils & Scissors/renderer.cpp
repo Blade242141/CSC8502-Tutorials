@@ -5,7 +5,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	meshes[1] = Mesh::GenerateQuad();
 
 	textures[0] = SOIL_load_OGL_texture(TEXTUREDIR"brick.tga", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, 0);
-	textures[1] = SOIL_load_OGL_texture(TEXTUREDIR"star.tga", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, 0);
+	textures[1] = SOIL_load_OGL_texture(TEXTUREDIR"star.png", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, 0);
 
 	if (!textures[0] || !textures[1])
 		return;
