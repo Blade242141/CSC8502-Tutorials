@@ -18,7 +18,7 @@ public:
 	void SetColour(Vector4 c) { colour = c; }
 
 	Vector3 GetModelScale() const { return modelScale; }
-	void SetModelScale(Vector3 s) { modeelScale = s; }
+	void SetModelScale(Vector3 s) { modelScale = s; }
 	Mesh* GetMesh() const { return mesh; }
 	void setMesh(Mesh* m);
 	void AddChild(SceneNode* s);
@@ -28,7 +28,7 @@ public:
 
 	std::vector<SceneNode*>::const_iterator GetCHildIteratorStart() { return children.begin(); }
 
-	std::vector<SceneNode*>::const_iterator GetChildIteratorEnd() { return childen.end(); }
+	std::vector<SceneNode*>::const_iterator GetChildIteratorEnd() { return children.end(); }
 
 protected:
 	SceneNode* parent;

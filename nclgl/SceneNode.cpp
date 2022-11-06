@@ -24,7 +24,7 @@ void SceneNode::Draw(const OGLRenderer& r) {
 
 void SceneNode::Update(float dt) {
 	parent ? worldTransform = parent->worldTransform * transform  : worldTransform = transform;
-	for (vector<SceneNode*>::iterator i = children.begin(); i != children.end();)
+	for (vector<SceneNode*>::iterator i = children.begin(); i != children.end(); ++i)
 		(*i)->Update(dt);
 }
 
