@@ -10,6 +10,21 @@ public:
 	SceneNode(Mesh* m = NULL, Vector4 colour = Vector4(1, 1, 1, 1));
 	~SceneNode(void);
 
+	//Tutorial 7
+	float const GetBoundingRadius()  { return boundingRadius; }
+	void SetBoundingRadius(float f) { boundingRadius = f; }
+
+	float const GetCameraDistance() { return distanceFromCamera; }
+	void SetCameraDistance(float f) { distanceFromCamera = f; }
+
+	void SetTexture(GLuint tex) { texture = tex; }
+	GLuint const GetTexture() { return texture; }
+
+	static bool CompareByCameraDistance(SceneNode* a, SceneNode* b) {
+		return (a->distanceFromCamera < b->distanceFromCamera) ? true : false;
+	}
+
+	//Tutorial 6
 	void SetTransform(const Matrix4& matrix) { transform = matrix; }
 	const Matrix4& GetTransform() const { return transform; }
 	Matrix4 GetWorldTransform() const { return worldTransform; }
@@ -20,7 +35,7 @@ public:
 	Vector3 GetModelScale() const { return modelScale; }
 	void SetModelScale(Vector3 s) { modelScale = s; }
 	Mesh* GetMesh() const { return mesh; }
-	void setMesh(Mesh* m);
+	void SetMesh(Mesh* m);
 	void AddChild(SceneNode* s);
 
 	virtual void Update(float dt);
@@ -33,6 +48,9 @@ public:
 protected:
 	SceneNode* parent;
 	Mesh* mesh;
+	float distanceFromCamera;
+	float boundingRadius;
+	GLuint texture;
 	Matrix4 worldTransform;
 	Matrix4 transform;
 	Vector3 modelScale;
