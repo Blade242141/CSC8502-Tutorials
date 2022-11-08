@@ -35,7 +35,7 @@ public:
 	Vector3 GetModelScale() const { return modelScale; }
 	void SetModelScale(Vector3 s) { modelScale = s; }
 	Mesh* GetMesh() const { return mesh; }
-	void SetMesh(Mesh* m);
+	void SetMesh(Mesh* m) { mesh = m; }
 	void AddChild(SceneNode* s);
 
 	virtual void Update(float dt);

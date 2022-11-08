@@ -1,5 +1,5 @@
 #include "../nclgl/window.h"
-#include "Renderer.h"
+#include "renderer.h"
 
 int main() {	
 	Window w("Scene Management!", 1280, 720,false);

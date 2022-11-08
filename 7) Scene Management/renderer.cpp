@@ -1,12 +1,12 @@
 #include "renderer.h"
-#include "..//nclgl/CubeRobot.h"
+#include "../nclgl/CubeRobot.h"
 #include "../nclgl/Camera.h"
 #include <algorithm>
 
 Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
-	camera = new Camera(0.0f, 0.0f, (Vector3(0, 100, 750.0f));
+	camera = new Camera(0.0f, 0.0f, (Vector3(0, 100, 750.0f)));
 	quad = Mesh::GenerateQuad();
-	cube = Mesh::LoadMeshFile("OffsetCubeY.msh");
+	cube = Mesh::LoadFromMeshFile("OffsetCubeY.msh");
 
 	shader = new Shader("SceneVertex.glsl", "sceneFragment.glsl");
 
@@ -70,4 +70,55 @@ void Renderer::BuildNodeLists(SceneNode* from) {
 	for (vector<SceneNode*>::const_iterator i = from->GetCHildIteratorStart(); i != from->GetChildIteratorEnd(); ++i)
 		BuildNodeLists(*i);
 
+}
+
+void Renderer::SortNodeLists() {
+	std::sort(transparentNodeList.rbegin(), transparentNodeList.rend(), SceneNode::CompareByCameraDistance);
+	std::sort(nodeList.begin(), nodeList.end(), SceneNode::CompareByCameraDistance);
+}
+
+void Renderer::DrawNodes() {
+	for (const auto& i : nodeList) {
+		DrawNode(i);
+	}
+	for (const auto& i : transparentNodeList) {
+		DrawNode(i);
+	}
+}
+
+void Renderer::DrawNode(SceneNode* n) {
+	if (n->GetMesh()) {
+		Matrix4 model = n->GetWorldTransform() * Matrix4::Scale(n->GetModelScale());
+		glUniformMatrix4fv(glGetUniformLocation(shader->GetProgram(), "modelMatrix"), 1, false, model.values);
+		glUniform4fv(glGetUniformLocation(shader->GetProgram(), "nodeColour"), 1, (float*)& n->GetColour());
+
+		texture = n->GetTexture();
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, texture);
+
+		glUniform1i(glGetUniformLocation(shader->GetProgram(), "useTexture"), texture);
+
+		n->Draw(*this);
+	}
+}
+
+void Renderer::RenderScene() {
+	BuildNodeLists(root);
+	SortNodeLists();
+
+	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+
+	BindShader(shader);
+	UpdateShaderMatrices();
+
+	glUniform1i(glGetUniformLocation(shader->GetProgram(), "diffuseTex"), 0);
+
+	DrawNodes();
+
+	ClearNodeLists();
+}
+
+void Renderer::ClearNodeLists() {
+	transparentNodeList.clear();
+	nodeList.clear();
 }

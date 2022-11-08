@@ -7,7 +7,7 @@ public:
 	Plane(Vector3 const& normal, float distance, bool normalise = false);
 	~Plane(void) {};
 
-	void SetNormal(Vector3 const& normal) { this->SetNormal = normal; }
+	void SetNormal(Vector3 const& normal) { this->normal = normal; }
 	Vector3 const GetNormal() { return normal; }
 
 	void SetDistance(float dist) { distance = dist; }
