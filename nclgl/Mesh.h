@@ -87,6 +87,9 @@ public:
 	bool GetSubMesh(const std::string& name, const SubMesh* s) const;
 
 protected:
+	GLuint numIndices;
+	unsigned int* indices;
+
 	void	BufferData();
 
 	GLuint	arrayObject;
@@ -94,7 +97,6 @@ protected:
 	GLuint	bufferObject[MAX_BUFFER];
 
 	GLuint	numVertices;
-	GLuint	numIndices;
 	
 	GLuint	type;
 
@@ -106,8 +108,6 @@ protected:
 
 	Vector4*		weights;
 	int*			weightIndices;
-
-	unsigned int*	indices;
 
 	Matrix4* bindPose;
 	Matrix4* inverseBindPose;

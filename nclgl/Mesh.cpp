@@ -22,6 +22,9 @@ Mesh::Mesh(void)	{
 	colours			= nullptr;
 	weights			= nullptr;
 	weightIndices	= nullptr;
+
+	indices = nullptr;
+	numIndices = 0;
 }
 
 Mesh::~Mesh(void)	{
@@ -36,6 +39,7 @@ Mesh::~Mesh(void)	{
 	delete[]	colours;
 	delete[]	weights;
 	delete[]	weightIndices;
+	delete[] indices;
 }
 
 void Mesh::Draw()	{
