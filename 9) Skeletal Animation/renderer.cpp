@@ -11,7 +11,7 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	
 	camera = new Camera(-3, 0.0f, Vector3(0, 1.4f, 4.0f));
 	
-	shader = new Shader("SkinningVertex.glsl", "texturedFragment");
+	shader = new Shader("SkinningVertex.glsl", "texturedFragment.glsl");
 
 	if (!shader->LoadSuccess())
 		return;
@@ -50,5 +50,32 @@ void Renderer::UpdateScene(float dt) {
 	while (frameTime < 0.0f) {
 		currentFrame = (currentFrame + 1) % anim->GetFrameCount();
 		frameTime += 1.0f / anim->GetFrameRate();
+	}
+}
+
+void Renderer::RenderScene() {
+	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+
+	BindShader(shader);
+	glUniform1i(glGetUniformLocation(shader->GetProgram(), "diffuseTex"), 0);
+
+	UpdateShaderMatrices();
+
+	vector<Matrix4> frameMatrices;
+
+	const Matrix4* invBindPose = mesh->GetInverseBindPose();
+	const Matrix4* frameData = anim->GetJointData(currentFrame);
+
+	for (unsigned int i = 0; i < mesh->GetJointCount(); ++i) {
+		frameMatrices.emplace_back(frameData[i] * invBindPose[i]);
+	}
+
+	int j = glGetUniformLocation(shader->GetProgram(), "joints");
+	glUniformMatrix4fv(j, frameMatrices.size(), false, (float*)frameMatrices.data());
+
+	for (int i = 0; i < mesh->GetSubMeshCount(); ++i) {
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, matTextures[i]);
+		mesh->DrawSubMesh(i);
 	}
 }
