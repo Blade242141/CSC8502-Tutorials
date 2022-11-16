@@ -219,6 +219,15 @@ void OGLRenderer::SetTextureRepeating(GLuint target, bool repeating) {
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
+void OGLRenderer::SetShaderLight(const Light& l) {
+	glUniform3fv(glGetUniformLocation(currentShader->GetProgram(), "lightPos"), 1, (float*)&l.GetPos());
+
+	glUniform4fv(glGetUniformLocation(currentShader->GetProgram(), "lightColour"), 1, (float*)&l.GetColour());
+
+	glUniform4fv(glGetUniformLocation(currentShader->GetProgram(), "lightRadius"), 1, &l.GetRadius());
+
+}
+
 void OGLRenderer::BindShader(Shader*s) {
 	currentShader = s;
 	glUseProgram(s->GetProgram());

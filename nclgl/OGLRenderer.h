@@ -81,6 +81,8 @@ protected:
 	int		height;			//Render area height (not quite the same as window height)
 	bool	init;			//Did the renderer initialise properly?
 
+	void SetShaderLight(const Light& l);
+
 private:
 	Shader* currentShader;	
 	HDC		deviceContext;	//...Device context?
