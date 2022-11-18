@@ -1,5 +1,5 @@
 #include "../NCLGL/window.h"
-#include "Renderer.h"
+#include "renderer.h"
 
 int main() {
 	Window w("Per Pixel Lighting!", 1280,720,false);

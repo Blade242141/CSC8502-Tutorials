@@ -14,13 +14,13 @@ public:
 
 	~Light(void) {};
 
-	Vector3 getPos()const { return pos; }
+	Vector3 GetPos() const { return pos; }
 	void SetPos(const Vector3& val) { pos = val; }
 	
 	float GetRadius() const { return radius; }
 	void SetRadious(float val) { radius = val; }
 
-	Vector4 Getcolour() const { return colour; }
+	Vector4 GetColour() const { return colour; }
 	void SetColour(const Vector4& val) { colour = val; }
 
 protected:

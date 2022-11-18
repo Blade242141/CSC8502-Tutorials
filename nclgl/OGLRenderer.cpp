@@ -14,6 +14,7 @@ _-_-_-_-_-_-_-""  ""
 */
 #include "OGLRenderer.h"
 #include "Shader.h"
+#include "Light.h"
 #include <algorithm>
 
 using std::string;
@@ -224,7 +225,7 @@ void OGLRenderer::SetShaderLight(const Light& l) {
 
 	glUniform4fv(glGetUniformLocation(currentShader->GetProgram(), "lightColour"), 1, (float*)&l.GetColour());
 
-	glUniform4fv(glGetUniformLocation(currentShader->GetProgram(), "lightRadius"), 1, &l.GetRadius());
+	glUniform1f(glGetUniformLocation(currentShader->GetProgram(), "lightRadius"), l.GetRadius());
 
 }
 
