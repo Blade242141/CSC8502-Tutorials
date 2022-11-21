@@ -3,6 +3,7 @@
 uniform mat4 modelMatrix;
 uniform mat4 viewMatrix;
 uniform mat4 projMatrix;
+uniform mat4 textureMatrix;
 
 in vec3 position;
 in vec3 normal;
@@ -18,7 +19,7 @@ out Vertex{
 void main (void) {
 	mat3 normalMatrix = transpose(inverse(mat3(modelMatrix)));
 
-	OUT.texCoord = (textureMatrix * vec4(textCoord, 0.0, 1.0)).xy;
+	OUT.texCoord = (textureMatrix * vec4(texCoord, 0.0, 1.0)).xy;
 
 	OUT.normal = normalize(normalMatrix * normalize(normal));
 

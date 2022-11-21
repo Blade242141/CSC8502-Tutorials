@@ -1,30 +1,52 @@
 #include "Renderer.h"
+#include "../nclgl/Camera.h"
+#include "../nclgl/HeightMap.h"
 
 Renderer::Renderer(Window &parent) : OGLRenderer(parent)	{
-	triangle = Mesh::GenerateTriangle();
 
-	basicShader = new Shader("basicVertex.glsl","colourFragment.glsl");
-
-	if(!basicShader->LoadSuccess()) {
-		return;
-	}
+	LoadScene();
 
 	init = true;
 }
 Renderer::~Renderer(void)	{
-	delete triangle;
-	delete basicShader;
+	delete hm;
+	delete cam;
+	delete shader;
+}
+
+void Renderer::LoadScene() {
+	hm = new HeightMap(CTEXTUREDIR"HeightMap.raw");
+	cam = new Camera(-40, 270, Vector3());
+
+	shader = new Shader("TexturedVertex.glsl", "texturedFragment.glsl");
+	hmTex = SOIL_load_OGL_texture(TEXTUREDIR"Barren Reds.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
+
+	if (!shader->LoadSuccess() || !hmTex)
+		return;
+
+	SetTextureRepeating(hmTex, true);
+
+	projMatrix = Matrix4::Perspective(1.0f, 10000.0f, (float)width / (float)height, 45.0f);
+
+	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
 }
 
 void Renderer::UpdateScene(float dt) {
-
+	cam->UpdateCamera(dt);
+	viewMatrix = cam->BuildViewMatrix();
 }
 
-void Renderer::RenderScene()	{
-	glClearColor(0.2f,0.2f,0.2f,1.0f);
-	glClear(GL_COLOR_BUFFER_BIT);	
+void Renderer::RenderScene() {
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	BindShader(basicShader);
-	triangle->Draw();
+	BindShader(shader);
+	UpdateShaderMatrices();
+
+	glUniform1i(glGetUniformLocation(shader->GetProgram(), "diffuseTex"), 0);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, hmTex);
+	hm->Draw();
 }
 

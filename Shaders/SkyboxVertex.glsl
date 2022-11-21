@@ -7,7 +7,7 @@ uniform mat4 projMatrix;
 in vec3 position;
 
 out Vertex{
-	vec3 viewDIR;
+	vec3 viewDir;
 } OUT;
 
 void main (void) {
