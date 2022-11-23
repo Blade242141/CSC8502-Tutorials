@@ -1,14 +1,15 @@
 #pragma once
-#include "../NCLGL/OGLRenderer.h"
+
+#include "../nclgl/OGLRenderer.h"
+
 class HeightMap;
 class Camera;
-class Mesh;
-class MeshAnimation;
-class MeshMaterial;
 class Light;
-class HeightMap;
+class Shader;
+class MeshMaterial;
+class MeshAnimation;
 
-class Renderer : public OGLRenderer	{
+class Renderer : public OGLRenderer {
 public:
 	Renderer(Window& parent);
 	~Renderer(void);
@@ -17,15 +18,34 @@ public:
 	void UpdateScene(float dt) override;
 
 protected:
-	Camera* camera;
-	Mesh* mesh;
+	void SetUpTex();
+	void DrawHeightmap();
+	void DrawWater();
+	void DrawSkybox();
+
+	Shader* lightShader;
+	Shader* reflectShader;
+	Shader* skyboxShader;
+
 	HeightMap* hm;
-	GLuint hmTex;
-	Shader* shader;
-	MeshAnimation* anim;
-	MeshMaterial* material;
-	vector<GLuint> matTextures;
+	Mesh* quad;
+
 	Light* light;
+	Camera* camera;
+
+	GLuint cubeMap;
+	GLuint waterTex;
+	GLuint earthTex;
+	GLuint earthBump;
+
+	float waterRotate;
+	float waterCycle;
+
+	Mesh* dogPerson;
+	Shader* dogShader;
+	MeshAnimation* anim;
+	MeshMaterial* mat;
+	vector<GLuint> matTextures;
 	int currentFrame;
 	float frameTime;
 };
