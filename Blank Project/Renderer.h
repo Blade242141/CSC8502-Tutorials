@@ -1,6 +1,8 @@
 #pragma once
 
 #include "../nclgl/OGLRenderer.h"
+#include "../nclgl/Frustum.h"
+#include <algorithm>
 
 class HeightMap;
 class Camera;
@@ -8,6 +10,7 @@ class Light;
 class Shader;
 class MeshMaterial;
 class MeshAnimation;
+class SceneNode;
 
 class Renderer : public OGLRenderer {
 public:
@@ -22,7 +25,8 @@ protected:
 	void DrawHeightmap();
 	void DrawWater();
 	void DrawSkybox();
-
+	void LoadDogKnight();
+	void DrawDogKnight();
 	Shader* lightShader;
 	Shader* reflectShader;
 	Shader* skyboxShader;
@@ -41,11 +45,20 @@ protected:
 	float waterRotate;
 	float waterCycle;
 
-	Mesh* dogPerson;
-	Shader* dogShader;
-	MeshAnimation* anim;
-	MeshMaterial* mat;
-	vector<GLuint> matTextures;
-	int currentFrame;
-	float frameTime;
-};
+	void SpawnObjs();
+	void BuildNodeLists(SceneNode * from);
+	void SortNodeLists();
+	void ClearNodeLists();
+	void DrawNodes();
+	void DrawNode(SceneNode * n);
+	
+	SceneNode* root;
+	Mesh* glassQuad;
+	Shader* glassShader;
+	GLuint glassTex;
+	
+	Frustum frameFrustum;
+	
+	vector <SceneNode*> transparentNodeList;
+	vector <SceneNode*> nodeList;
+	};
