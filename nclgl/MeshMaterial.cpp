@@ -8,7 +8,6 @@ using std::ifstream;
 
 MeshMaterial::MeshMaterial(const std::string& filename) {
 	ifstream file(MESHDIR+filename);
-
 	string dataType;
 	file >> dataType;
 

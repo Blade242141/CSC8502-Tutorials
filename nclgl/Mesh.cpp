@@ -418,7 +418,6 @@ Mesh* Mesh::LoadFromMeshFile(const string& name) {
 	Mesh* mesh = new Mesh();
 
 	std::ifstream file(MESHDIR + name);
-	std::cout << MESHDIR << name << std::endl;
 	std::string filetype;
 	int fileVersion;
 

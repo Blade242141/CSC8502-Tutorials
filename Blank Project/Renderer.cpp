@@ -21,16 +21,16 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	skyboxShader = new Shader("skyboxVertex.glsl", "skyboxFragment.glsl");
 	lightShader = new Shader("PerPixelVertex.glsl", "perPixelFragment.glsl");
 	glassShader = new Shader("SceneVertex.glsl", "SceneFragment.glsl");
+	mageShader = new Shader("SkinningVertex.glsl", "texturedFragment.glsl");
 
-	if (!reflectShader->LoadSuccess() || !skyboxShader->LoadSuccess() || !lightShader->LoadSuccess() || !glassShader->LoadSuccess())
+	if (!reflectShader->LoadSuccess() || !skyboxShader->LoadSuccess() || !lightShader->LoadSuccess() || !glassShader->LoadSuccess() || !mageShader->LoadSuccess())
 		return;
 
 	Vector3 heightmapSize = hm->GetHeightmapSize();
 	camera = new Camera(-45.0f, 0.0f, heightmapSize * Vector3(0.5f, 5.0f, 0.5f));
-	light = new Light(heightmapSize * Vector3(0.f, 1.5f, 0.0f), Vector4(1, 1, 1, 10), heightmapSize.x * 1.5);
+	light = new Light(heightmapSize * Vector3(0.5f, 1.5f, 0.5f), Vector4(1, 1, 1, 10), heightmapSize.x * 1.5);
 
 	//Load Objects into Scene
-	SpawnObjs();
 
 	projMatrix = Matrix4::Perspective(1.0f, 15000.0f, (float)width / (float)height, 45.0f);
 
@@ -42,6 +42,8 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	waterCycle = 0.0f;
 
 	glEnable(GL_CULL_FACE);
+	SpawnObjs();
+
 	init = true;
 }
 
@@ -102,6 +104,37 @@ void Renderer::SpawnObjs() {
 	glass->SetTexture(glassTex);
 
 	root->AddChild(glass);
+	SpawnMage();
+}
+
+void Renderer::SpawnMage() {
+	mage = new SceneNode(Mesh::LoadFromMeshFile("Coursework/Golem/PBR_Golem.msh"));
+
+	//mageMesh = Mesh::LoadFromMeshFile("Coursework/Golem/Golem.msh");
+	mageAnim = new MeshAnimation("Coursework/Golem/anim1.anm");
+	mageMat = new MeshMaterial("Coursework/Golem/Golem.mat");
+
+	for (int i = 0; i < mage->GetMesh()->GetSubMeshCount(); ++i) {
+		const MeshMaterialEntry* matEntry = mageMat->GetMaterialForLayer(i);
+		const string* filename = nullptr;
+		matEntry->GetEntry("Diffuse", &filename);
+		std::cout << "filename = " << *filename << std::endl;
+		string path = TEXTUREDIR + *filename;
+		std::cout << "str = " << path << std::endl;
+		GLuint texID = SOIL_load_OGL_texture(path.c_str(), SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS | SOIL_FLAG_INVERT_Y);
+		mageTextures.emplace_back(texID);
+	}
+
+
+	//mage->SetTransform(Matrix4::Translation(Vector3(0, 100.0f, -300.0f + 100.0f + 100)));
+	//mage->SetModelScale(Vector3(100.0f, 100.0f, 100.0f));
+
+	//mage->SetTransform(Matrix4::Rotation(90.0f, Vector3(1, 0, 0)));
+	//mage->SetBoundingRadius(100.0f);
+
+	frameTime = 0.0f;
+	currentFrame = 0;
+	root->AddChild(mage);
 }
 
 void Renderer::UpdateScene(float dt) {
@@ -113,6 +146,12 @@ void Renderer::UpdateScene(float dt) {
 	//Water cycle
 	waterRotate += dt * 2.0f;
 	waterCycle += dt * 0.25f;
+
+	frameTime -= dt;
+	while (frameTime < 0.0f) {
+		currentFrame = (currentFrame + 1) % mageAnim->GetFrameCount();
+		frameTime += 1.0f / mageAnim->GetFrameRate();
+	}
 }
 
 void Renderer::RenderScene() {
@@ -123,7 +162,8 @@ void Renderer::RenderScene() {
 	
 	DrawSkybox();
 	DrawHeightmap();
-	//DrawWater();
+	DrawMage();
+	DrawWater();
 
 	BindShader(glassShader);
 	UpdateShaderMatrices();
@@ -132,6 +172,29 @@ void Renderer::RenderScene() {
 	DrawNodes();
 	
 	ClearNodeLists();
+}
+
+void Renderer::DrawMage() {
+	BindShader(mageShader);
+	glUniform1i(glGetUniformLocation(mageShader->GetProgram(), "diffuseTex"), 0);
+
+	UpdateShaderMatrices();
+
+	vector<Matrix4> frameMatrices;
+	const Matrix4* invBindPose = mage->GetMesh()->GetInverseBindPose();
+	const Matrix4* frameData = mageAnim->GetJointData(currentFrame);
+
+	for (unsigned int i = 0; i < mage->GetMesh()->GetJointCount(); ++i)
+		frameMatrices.emplace_back(frameData[i] * invBindPose[i]);
+
+	int j = glGetUniformLocation(mageShader->GetProgram(), "joints");
+	glUniformMatrix4fv(j, frameMatrices.size()*5, false, (float*)frameMatrices.data());
+
+	for (int i = 0; i < mage->GetMesh()->GetSubMeshCount(); ++i) {
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, mageTextures[i]);
+		mage->GetMesh()->DrawSubMesh(i);
+	}
 }
 
 void Renderer::DrawSkybox() {
@@ -166,7 +229,6 @@ void Renderer::DrawHeightmap() {
 	hm->Draw();
 }
 
-
 void Renderer::BuildNodeLists(SceneNode* from) {
 	if (frameFrustum.InsideFrustum(*from)) {
 		Vector3 dir = from->GetWorldTransform().GetPositionVector() - camera->GetPosition();
@@ -183,12 +245,8 @@ void Renderer::BuildNodeLists(SceneNode* from) {
 }
 
 void Renderer::SortNodeLists() {
-	std::sort(transparentNodeList.rbegin(), //note the r!
-		transparentNodeList.rend(), //note the r!
-		SceneNode::CompareByCameraDistance);
-	std::sort(nodeList.begin(),
-		nodeList.end(),
-		SceneNode::CompareByCameraDistance);
+	std::sort(transparentNodeList.rbegin(),	transparentNodeList.rend(),	SceneNode::CompareByCameraDistance);
+	std::sort(nodeList.begin(),	nodeList.end(),	SceneNode::CompareByCameraDistance);
 }
 
 void Renderer::ClearNodeLists() {
@@ -222,30 +280,30 @@ void Renderer::DrawNode(SceneNode* n) {
 	}
 }
 
-//
-//void Renderer::DrawWater() {
-//	BindShader(reflectShader);
-//
-//	glUniform3fv(glGetUniformLocation(reflectShader->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
-//
-//	glUniform1i(glGetUniformLocation(reflectShader->GetProgram(), "diffuseTex"), 0);
-//	glUniform1i(glGetUniformLocation(reflectShader->GetProgram(), "cubeTex"), 2);
-//
-//	glActiveTexture(GL_TEXTURE0);
-//
-//	glBindTexture(GL_TEXTURE_2D, waterTex);
-//
-//	glActiveTexture(GL_TEXTURE2);
-//	glBindTexture(GL_TEXTURE_2D, cubeMap);
-//
-//	Vector3 hSize = hm->GetHeightmapSize();
-//
-//	modelMatrix = Matrix4::Translation(hSize * 0.5f) * Matrix4::Scale(hSize * 0.5f) * Matrix4::Rotation(90, Vector3(1, 0, 0));
-//
-//	textureMatrix = Matrix4::Translation(Vector3(waterCycle, 0.0f, waterCycle)) * Matrix4::Scale(Vector3(10, 10, 10)) * Matrix4::Rotation(waterRotate, Vector3(0, 0, 1));
-//
-//
-//	UpdateShaderMatrices();
-//	SetShaderLight(*light);
-//	quad->Draw();
-//}
+void Renderer::DrawWater() {
+	BindShader(reflectShader);
+
+	glUniform3fv(glGetUniformLocation(reflectShader->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
+
+	glUniform1i(glGetUniformLocation(reflectShader->GetProgram(), "diffuseTex"), 0);
+	glUniform1i(glGetUniformLocation(reflectShader->GetProgram(), "cubeTex"), 2);
+
+	glActiveTexture(GL_TEXTURE0);
+
+	glBindTexture(GL_TEXTURE_2D, waterTex);
+
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, cubeMap);
+
+	Vector3 hSize = hm->GetHeightmapSize();
+
+	modelMatrix = Matrix4::Translation(hSize * 0.5f) * Matrix4::Scale(hSize * 0.5f) * Matrix4::Rotation(-90, Vector3(1, 0, 0));
+
+	textureMatrix = Matrix4::Translation(Vector3(waterCycle, 0.0f, waterCycle)) * Matrix4::Scale(Vector3(10, 10, 10)) * Matrix4::Rotation(waterRotate, Vector3(0, 0, 1));
+
+
+	UpdateShaderMatrices();
+	//SetShaderLight(*light);
+
+	quad->Draw();
+}

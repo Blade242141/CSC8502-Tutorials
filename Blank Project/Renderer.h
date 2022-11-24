@@ -22,11 +22,11 @@ public:
 
 protected:
 	void SetUpTex();
+	void SpawnMage();
 	void DrawHeightmap();
 	void DrawWater();
 	void DrawSkybox();
-	void LoadDogKnight();
-	void DrawDogKnight();
+	void DrawMage();
 	Shader* lightShader;
 	Shader* reflectShader;
 	Shader* skyboxShader;
@@ -61,4 +61,15 @@ protected:
 	
 	vector <SceneNode*> transparentNodeList;
 	vector <SceneNode*> nodeList;
+
+	//Mage 
+	//Mesh* mageMesh;
+	SceneNode* mage;
+	MeshAnimation* mageAnim;
+
+	MeshMaterial* mageMat;
+	Shader* mageShader;
+	vector<GLuint> mageTextures;
+	int currentFrame;
+	float frameTime;
 	};
