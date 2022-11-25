@@ -17,9 +17,9 @@ void Frustum::FromMatrix(Matrix4 const& mat) {
 	Vector3 waxis = Vector3(mat.values[3], mat.values[7], mat.values[11]);
 
 	planes[0] = Plane(waxis - xaxis, (mat.values[15] - mat.values[12]), true); // right
-	planes[1] = Plane(waxis + xaxis, (mat.values[15] - mat.values[12]), true); // left
-	planes[2] = Plane(waxis + yaxis, (mat.values[15] - mat.values[12]), true); // bottom
-	planes[3] = Plane(waxis - yaxis, (mat.values[15] - mat.values[12]), true); // top
-	planes[4] = Plane(waxis + zaxis, (mat.values[15] - mat.values[12]), true); // near
-	planes[5] = Plane(waxis - zaxis, (mat.values[15] - mat.values[12]), true); // far
+	planes[1] = Plane(waxis + xaxis, (mat.values[15] + mat.values[12]), true); // left
+	planes[2] = Plane(waxis + yaxis, (mat.values[15] + mat.values[13]), true); // bottom
+	planes[3] = Plane(waxis - yaxis, (mat.values[15] - mat.values[13]), true); // top
+	planes[4] = Plane(waxis + zaxis, (mat.values[15] + mat.values[14]), true); // near
+	planes[5] = Plane(waxis - zaxis, (mat.values[15] - mat.values[14]), true); // far
 }

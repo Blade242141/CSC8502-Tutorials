@@ -23,11 +23,15 @@ public:
 protected:
 	void SetUpTex();
 	void SpawnMage();
+	//void Spawnskell();
 	void DrawHeightmap();
 	void DrawWater();
 	void DrawSkybox();
 	void DrawMage();
-	Shader* lightShader;
+	//void DrawObjs();
+	//void Drawskell();
+
+	Shader* bumpShader;
 	Shader* reflectShader;
 	Shader* skyboxShader;
 
@@ -41,35 +45,60 @@ protected:
 	GLuint waterTex;
 	GLuint earthTex;
 	GLuint earthBump;
+	
 
 	float waterRotate;
 	float waterCycle;
 
 	void SpawnObjs();
-	void BuildNodeLists(SceneNode * from);
+	void BuildNodeLists(SceneNode* from);
 	void SortNodeLists();
 	void ClearNodeLists();
 	void DrawNodes();
-	void DrawNode(SceneNode * n);
-	
+	void DrawNode(SceneNode* n);
+
 	SceneNode* root;
 	Mesh* glassQuad;
 	Shader* glassShader;
 	GLuint glassTex;
-	
+
+	//SceneNode* snowMan;
+	//Shader* snowManShader;
+
+	//Mesh* cube;
+	//Shader* glowShader;
+	//GLuint glowTex;
+
+	void PrepHDRTex();
 	Frustum frameFrustum;
-	
+
 	vector <SceneNode*> transparentNodeList;
 	vector <SceneNode*> nodeList;
 
 	//Mage 
-	//Mesh* mageMesh;
-	SceneNode* mage;
+	Mesh* mage;
 	MeshAnimation* mageAnim;
-
 	MeshMaterial* mageMat;
 	Shader* mageShader;
 	vector<GLuint> mageTextures;
-	int currentFrame;
-	float frameTime;
-	};
+	int mageCurrentFrame;
+	float mageFrameTime;
+
+	void SpawnRocks();
+	Mesh* rock1;
+	Mesh* rock2;
+	Mesh* rock3;
+	Mesh* rock4;
+	Mesh* rock5;
+	GLuint cracksTex;
+	GLuint poisonTex;
+
+	//skell
+	//Mesh* skell;
+	//MeshAnimation* skellAnim;
+	//MeshMaterial* skellMat;
+	//Shader* skellShader;
+	//vector<GLuint> skellTextures;
+	//int skellCurrentFrame;
+	//float skellFrameTime;
+};

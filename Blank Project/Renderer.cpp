@@ -13,26 +13,31 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	quad = Mesh::GenerateQuad();
 	glassQuad = Mesh::GenerateQuad();
 
-	hm = new HeightMap(CTEXTUREDIR"hm1.png");
+	hm = new HeightMap(CTEXTUREDIR"hm.png");
 
 	SetUpTex();
-
-	reflectShader = new Shader("ReflectVertex.glsl", "reflectFragment.glsl");
-	skyboxShader = new Shader("skyboxVertex.glsl", "skyboxFragment.glsl");
-	lightShader = new Shader("PerPixelVertex.glsl", "perPixelFragment.glsl");
-	glassShader = new Shader("SceneVertex.glsl", "SceneFragment.glsl");
 	mageShader = new Shader("SkinningVertex.glsl", "texturedFragment.glsl");
+	reflectShader = new Shader("ReflectVertex.glsl", "reflectFragment.glsl");
+	skyboxShader = new Shader("SkyboxVertex.glsl", "skyboxFragment.glsl");
+	bumpShader = new Shader("BumpVertex.glsl", "bumpFragment.glsl");
+	glassShader = new Shader("SceneVertex.glsl", "sceneFragment.glsl");
+	//snowManShader = new Shader("SkinningVertex.glsl", "texturedFragment.glsl");
+	//skellShader = new Shader("SkinningVertex.glsl", "texturedFragment.glsl");
+	//glowShader = new Shader("SceneVertex.glsl", "hdrFragment.glsl");
 
-	if (!reflectShader->LoadSuccess() || !skyboxShader->LoadSuccess() || !lightShader->LoadSuccess() || !glassShader->LoadSuccess() || !mageShader->LoadSuccess())
+	if (!reflectShader->LoadSuccess() || !skyboxShader->LoadSuccess() || !bumpShader->LoadSuccess() || !glassShader->LoadSuccess())// || !mageShader->LoadSuccess()); // || !snowManShader->LoadSuccess()) //!skellShader->LoadSuccess())
 		return;
 
 	Vector3 heightmapSize = hm->GetHeightmapSize();
-	camera = new Camera(-45.0f, 0.0f, heightmapSize * Vector3(0.5f, 5.0f, 0.5f));
+	camera = new Camera(0.0f, 0.0f, Vector3(6992, 190, 6996));//heightmapSize * Vector3(0.5f, 5.0f, 0.5f));
 	light = new Light(heightmapSize * Vector3(0.5f, 1.5f, 0.5f), Vector4(1, 1, 1, 10), heightmapSize.x * 1.5);
 
 	//Load Objects into Scene
 
-	projMatrix = Matrix4::Perspective(1.0f, 15000.0f, (float)width / (float)height, 45.0f);
+
+
+	SpawnObjs();
+	projMatrix = Matrix4::Perspective(1.0f, 10000.0f, (float)width / (float)height, 45.0f);
 
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_BLEND);
@@ -42,7 +47,6 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	waterCycle = 0.0f;
 
 	glEnable(GL_CULL_FACE);
-	SpawnObjs();
 
 	init = true;
 }
@@ -53,8 +57,33 @@ Renderer::~Renderer(void) {
 	delete quad;
 	delete reflectShader;
 	delete skyboxShader;
-	delete lightShader;
+	delete bumpShader;
 	delete light;
+
+	delete bumpShader;
+
+	delete root;
+	delete glassQuad;
+	delete glassShader;
+
+	delete mage;
+	delete mageAnim;
+	delete mageMat;
+	delete mageShader;
+
+	//delete skell;
+	//delete skellAnim;
+	//delete skellMat;
+	//delete skellShader;
+
+	//delete snowMan;
+	//delete snowManShader;
+
+	delete rock1;
+	delete rock2;
+	delete rock3;
+	delete rock4;
+	delete rock5;
 }
 
 void Renderer::SetUpTex() {
@@ -62,6 +91,12 @@ void Renderer::SetUpTex() {
 	earthTex = SOIL_load_OGL_texture(TEXTUREDIR"Barren Reds.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
 	earthBump = SOIL_load_OGL_texture(TEXTUREDIR"Barren RedsDOT3.JPG", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
 	glassTex = SOIL_load_OGL_texture(TEXTUREDIR"stainedglass.tga", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
+	cracksTex = SOIL_load_OGL_texture(CTEXTUREDIR"Cave_Cracks.png", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
+	poisonTex = SOIL_load_OGL_texture(CTEXTUREDIR"Cave_Poison.png", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
+	//snowManTex = SOIL_load_OGL_texture(CTEXTUREDIR"Base_01.png", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
+	//snowManBump = SOIL_load_OGL_texture(CTEXTUREDIR"Snow Man_01_Body_Normal.png", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
+	//snowManSmoothness = SOIL_load_OGL_texture(CTEXTUREDIR"Snow Man_01_Body_MetallicSmoothness.png", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
+	//glowTex = SOIL_load_OGL_texture(TEXTUREDIR"purple.png", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
 
 	//Night Galaxy
 	//cubeMap = SOIL_load_OGL_cubemap(
@@ -83,7 +118,7 @@ void Renderer::SetUpTex() {
 		CTEXTUREDIR"MBack.png",
 		SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, 0);
 
-	if (!earthTex || !earthBump || !cubeMap || !waterTex || !glassTex)
+	if (!earthTex || !earthBump || !cubeMap || !waterTex || !glassTex || !cracksTex || !poisonTex)
 		return;
 
 	SetTextureRepeating(earthTex, true);
@@ -94,84 +129,220 @@ void Renderer::SetUpTex() {
 void Renderer::SpawnObjs() {
 	root = new SceneNode();
 
-	SceneNode* glass = new SceneNode();
-	glass->SetColour(Vector4(1.0f, 1.0f, 1.0f, 0.5f));
-	glass->SetTransform(Matrix4::Translation(Vector3(0, 100.0f, -300.0f + 100.0f + 100)));
-	glass->SetTransform(Matrix4::Rotation(180, Vector3(1, 0, 0)));
-	glass->SetModelScale(Vector3(1000.0f, 1000.0f, 1000.0f));
-	glass->SetBoundingRadius(100.0f);
-	glass->SetMesh(glassQuad);
-	glass->SetTexture(glassTex);
+	
+	/*Spawn cube for HDR shader*/
+	//cube = Mesh::LoadFromMeshFile("OffsetCubeY.msh");
+	//SceneNode* glowCube = new SceneNode(cube, Vector4(0.5, 0.5, 0.5, 1));
+	//glowCube->SetModelScale(Vector3(25, 25, 25));
+	//glowCube->SetBoundingRadius(100.0f);
+	//glowCube->SetTransform(Matrix4::Translation(Vector3(50, 10, 50)));
+	//glowCube->SetTexture(glowTex);
+	//root->AddChild(glowCube);
 
-	root->AddChild(glass);
+	/*Attempt to spawn a humaniod mesh with material as an SceneNode*/
+	//snowMan = new SceneNode();
+	//snowMan->SetMesh(Mesh::LoadFromMeshFile("Coursework/SnowMan/snowman.msh"));
+	//snowMan->SetTransform(Matrix4::Translation(Vector3(1, 1, 1)));
+	//snowMan->SetBoundingRadius(100.0f);
+	//snowMan->SetMeshMaterial(new MeshMaterial("Coursework/SnowMan/SnowMan.mat"));
+	//for (int i = 0; i < snowMan->GetMesh()->GetSubMeshCount(); ++i) {
+	//	const MeshMaterialEntry* matEntry = snowMan->GetMeshMaterial()->GetMaterialForLayer(i);
+	//	const string* filename = nullptr;
+	//	matEntry->GetEntry("Diffuse", &filename);
+	//	string path = TEXTUREDIR + *filename;
+	//	GLuint texID = SOIL_load_OGL_texture(path.c_str(), SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS | SOIL_FLAG_INVERT_Y);
+	//	snowMan->GetTextures().emplace_back(texID);
+	//}
+
+	//root->AddChild(snowMan);
+
+	SpawnRocks();
 	SpawnMage();
+	//Spawnskell();
+}
+
+void Renderer::SpawnRocks() {
+	Vector3 hmSize = hm->GetHeightmapSize();
+
+	SceneNode* rockParent = new SceneNode();
+	rockParent->SetMesh(glassQuad);
+	rockParent->SetTexture(glassTex);
+	rockParent->SetColour(Vector4(1.0f, 1.0f, 1.0f, 0.5f));
+	rockParent->SetTransform(Matrix4::Translation(Vector3((hmSize.x * 0.5) - 100, 250, (hmSize.z * 0.5) - 100)));
+	rockParent->SetTransform(rockParent->GetTransform() * Matrix4::Rotation(180, Vector3(0, 1, 0)));
+	rockParent->SetModelScale(Vector3(100.0f, 100.0f, 100.0f));
+	rockParent->SetBoundingRadius(1.0f);
+
+
+	rock1 = Mesh::LoadFromMeshFile("Coursework/Rocks/Rock1.msh");
+	rock2 = Mesh::LoadFromMeshFile("Coursework/Rocks/Rock2.msh");
+	rock3 = Mesh::LoadFromMeshFile("Coursework/Rocks/Rock3.msh");
+	rock4 = Mesh::LoadFromMeshFile("Coursework/Rocks/Rock4.msh");
+	rock5 = Mesh::LoadFromMeshFile("Coursework/Rocks/Rock5.msh");
+
+	SceneNode* rockA = new SceneNode();
+	rockA->SetMesh(rock1);
+	rockA->SetColour(Vector4(1, 1, 1, 1));
+	rockA->SetModelScale(Vector3(100, 100, 100));
+	rockA->SetTransform(Matrix4::Translation(Vector3(250, -100, 250)));
+	rockA->SetBoundingRadius(1);
+	rockA->SetTexture(poisonTex);
+	rockA->SetShader(bumpShader);
+
+	SceneNode* rockB = new SceneNode();
+	rockB->SetMesh(rock2);
+	rockB->SetColour(Vector4(1, 1, 1, 1));
+	rockB->SetModelScale(Vector3(100, 100, 100));
+	rockB->SetTransform(Matrix4::Translation(Vector3(500, -100, 0)));
+	rockB->SetBoundingRadius(1);
+	rockB->SetTexture(cracksTex);
+	rockB->SetShader(bumpShader);
+
+	SceneNode* rockC = new SceneNode();
+	rockC->SetMesh(rock3);
+	rockC->SetColour(Vector4(1, 1, 1, 1));
+	rockC->SetModelScale(Vector3(100, 100, 100));
+	rockC->SetTransform(Matrix4::Translation(Vector3(0, -100, 500)));
+	rockC->SetBoundingRadius(1);
+	rockC->SetTexture(poisonTex);
+	rockC->SetShader(bumpShader);
+
+	SceneNode* rockD = new SceneNode();
+	rockD->SetMesh(rock4);
+	rockD->SetColour(Vector4(1, 1, 1, 1));
+	rockD->SetModelScale(Vector3(100, 100, 100));
+	rockD->SetTransform(Matrix4::Translation(Vector3(-250, -100, 250)));
+	rockD->SetBoundingRadius(1);
+	rockD->SetTexture(cracksTex);
+	rockD->SetShader(bumpShader);
+
+	SceneNode* rockE = new SceneNode();
+	rockE->SetMesh(rock5);
+	rockE->SetColour(Vector4(1, 1, 1, 1));
+	rockE->SetModelScale(Vector3(100, 100, 100));
+	rockE->SetTransform(Matrix4::Translation(Vector3(250, -150, -250)));
+	rockE->SetBoundingRadius(100);
+	rockE->SetTexture(poisonTex);
+	rockE->SetShader(bumpShader);
+
+	SceneNode* rockF = new SceneNode();
+	rockF->SetMesh(rock3);
+	rockF->SetColour(Vector4(1, 1, 1, 1));
+	rockF->SetModelScale(Vector3(100, 100, 100));
+	rockF->SetTransform(Matrix4::Translation(Vector3(-500, -100, 0)));
+	rockF->SetBoundingRadius(1);
+	rockF->SetTexture(cracksTex);
+	rockF->SetShader(bumpShader);
+
+	SceneNode* rockG = new SceneNode();
+	rockG->SetMesh(rock4);
+	rockG->SetColour(Vector4(1, 1, 1, 1));
+	rockG->SetModelScale(Vector3(100, 100, 100));
+	rockG->SetTransform(Matrix4::Translation(Vector3(0, -100, -500)));
+	rockG->SetBoundingRadius(1);
+	rockG->SetTexture(poisonTex);
+	rockG->SetShader(bumpShader);
+
+	root->AddChild(rockParent);
+	rockParent->AddChild(rockA);
+	rockParent->AddChild(rockB);
+	rockParent->AddChild(rockC);
+	rockParent->AddChild(rockD);
+	rockParent->AddChild(rockE);
+	rockParent->AddChild(rockF);
+	rockParent->AddChild(rockG);
 }
 
 void Renderer::SpawnMage() {
-	mage = new SceneNode(Mesh::LoadFromMeshFile("Coursework/Golem/PBR_Golem.msh"));
+	//mage = new SceneNode(Mesh::LoadFromMeshFile("Coursework/Mage/Mage.msh"));
 
-	//mageMesh = Mesh::LoadFromMeshFile("Coursework/Golem/Golem.msh");
-	mageAnim = new MeshAnimation("Coursework/Golem/anim1.anm");
-	mageMat = new MeshMaterial("Coursework/Golem/Golem.mat");
+	mage = Mesh::LoadFromMeshFile("Coursework/Mage/Mage.msh");
+	mageAnim = new MeshAnimation("Coursework/Mage/anim.anm");
+	mageMat = new MeshMaterial("Coursework/Mage/Mage.mat");
 
-	for (int i = 0; i < mage->GetMesh()->GetSubMeshCount(); ++i) {
+	for (int i = 0; i < mage->GetSubMeshCount(); ++i) {
 		const MeshMaterialEntry* matEntry = mageMat->GetMaterialForLayer(i);
 		const string* filename = nullptr;
 		matEntry->GetEntry("Diffuse", &filename);
-		std::cout << "filename = " << *filename << std::endl;
 		string path = TEXTUREDIR + *filename;
-		std::cout << "str = " << path << std::endl;
 		GLuint texID = SOIL_load_OGL_texture(path.c_str(), SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS | SOIL_FLAG_INVERT_Y);
 		mageTextures.emplace_back(texID);
 	}
 
-
+	mageCurrentFrame = 0;
+	mageFrameTime = 0.0f;
 	//mage->SetTransform(Matrix4::Translation(Vector3(0, 100.0f, -300.0f + 100.0f + 100)));
 	//mage->SetModelScale(Vector3(100.0f, 100.0f, 100.0f));
 
 	//mage->SetTransform(Matrix4::Rotation(90.0f, Vector3(1, 0, 0)));
 	//mage->SetBoundingRadius(100.0f);
-
-	frameTime = 0.0f;
-	currentFrame = 0;
-	root->AddChild(mage);
+	//root->AddChild(mage);
 }
+
+//void Renderer::Spawnskell() {
+//	skell = Mesh::LoadFromMeshFile("Coursework/skell/skell.msh");
+//	skellAnim = new MeshAnimation("Coursework/skell/anim.anm");
+//	skellMat = new MeshMaterial("Coursework/skell/skell.mat");
+//
+//	for (int i = 0; i < skell->GetSubMeshCount(); ++i) {
+//		const MeshMaterialEntry* matEntry = skellMat->GetMaterialForLayer(i);
+//		const string* filename = nullptr;
+//		matEntry->GetEntry("Diffuse", &filename);
+//		string path = TEXTUREDIR + *filename;
+//		GLuint texID = SOIL_load_OGL_texture(path.c_str(), SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS | SOIL_FLAG_INVERT_Y);
+//		skellTextures.emplace_back(texID);
+//	}
+//	skellCurrentFrame = 0;
+//	skellFrameTime = 0.0f;
+//}
 
 void Renderer::UpdateScene(float dt) {
 	camera->UpdateCamera(dt * 20);
 	viewMatrix = camera->BuildViewMatrix();
 	frameFrustum.FromMatrix(projMatrix * viewMatrix);
 	root->Update(dt);
+	
+	if (Window::GetKeyboard()->KeyDown(KEYBOARD_L))
+		std::cout << "x = " << camera->GetPosition().x << ", y = " << camera->GetPosition().y << ", z = " << camera->GetPosition().z << std::endl;
+
 
 	//Water cycle
-	waterRotate += dt * 2.0f;
+	waterRotate += dt * 1.0f;
 	waterCycle += dt * 0.25f;
 
-	frameTime -= dt;
-	while (frameTime < 0.0f) {
-		currentFrame = (currentFrame + 1) % mageAnim->GetFrameCount();
-		frameTime += 1.0f / mageAnim->GetFrameRate();
+	mageFrameTime -= dt;
+	//skellFrameTime -= dt;
+	while (mageFrameTime < 0.0f) {
+		mageCurrentFrame = (mageCurrentFrame + 1) % mageAnim->GetFrameCount();
+		mageFrameTime += 1.0f / mageAnim->GetFrameRate();
 	}
+	//while (skellFrameTime < 0.0f) {
+	//	skellCurrentFrame = (skellCurrentFrame + 1) % skellAnim->GetFrameCount();
+	//	skellFrameTime += 1.0f / skellAnim->GetFrameRate();
+	//}
 }
 
 void Renderer::RenderScene() {
+	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	BuildNodeLists(root);
 	SortNodeLists();
+	PrepHDRTex();
 
-	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-	
 	DrawSkybox();
 	DrawHeightmap();
+	//Drawskell();	//Mesh loads incorrectly, axes move but humanoid is not correct 
 	DrawMage();
 	DrawWater();
+	//DrawObjs();	//Unable to get mesh to render on screen
 
-	BindShader(glassShader);
-	UpdateShaderMatrices();
-	
-	glUniform1i(glGetUniformLocation(glassShader->GetProgram(), "diffuseTex"), 0);
 	DrawNodes();
-	
+
 	ClearNodeLists();
+}
+
+void Renderer::PrepHDRTex() {
+	//Removed code breaking the whole thing
+	//Reattempt Later
 }
 
 void Renderer::DrawMage() {
@@ -181,21 +352,71 @@ void Renderer::DrawMage() {
 	UpdateShaderMatrices();
 
 	vector<Matrix4> frameMatrices;
-	const Matrix4* invBindPose = mage->GetMesh()->GetInverseBindPose();
-	const Matrix4* frameData = mageAnim->GetJointData(currentFrame);
+	const Matrix4* invBindPose = mage->GetInverseBindPose();
+	const Matrix4* frameData = mageAnim->GetJointData(mageCurrentFrame);
 
-	for (unsigned int i = 0; i < mage->GetMesh()->GetJointCount(); ++i)
+	for (unsigned int i = 0; i < mage->GetJointCount(); ++i)
 		frameMatrices.emplace_back(frameData[i] * invBindPose[i]);
 
 	int j = glGetUniformLocation(mageShader->GetProgram(), "joints");
-	glUniformMatrix4fv(j, frameMatrices.size()*5, false, (float*)frameMatrices.data());
+	glUniformMatrix4fv(j, frameMatrices.size(), false, (float*)frameMatrices.data());
 
-	for (int i = 0; i < mage->GetMesh()->GetSubMeshCount(); ++i) {
+	//modelMatrix = Matrix4::Translation(Vector3(1, 1, 1)) * Matrix4::Scale(Vector3(100, 100, 100)) * Matrix4::Rotation(180, Vector3(0, 1, 0));
+
+
+	for (int i = 0; i < mage->GetSubMeshCount(); ++i) {
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, mageTextures[i]);
-		mage->GetMesh()->DrawSubMesh(i);
+		mage->DrawSubMesh(i);
 	}
 }
+
+//void Renderer::DrawObjs() {
+//	BindShader(snowManShader);
+//	glUniform1i(glGetUniformLocation(snowManShader->GetProgram(), "diffuseTex"), 0);
+//	
+//	UpdateShaderMatrices();
+//
+//	vector<Matrix4> frameMatrices;
+//	const Matrix4* invBindPose = snowMan->GetMesh()->GetInverseBindPose();
+//
+//	for (unsigned int i = 0; i < snowMan->GetMesh()->GetJointCount(); ++i)
+//		frameMatrices.emplace_back(invBindPose[i]);
+//
+//	int j = glGetUniformLocation(snowManShader->GetProgram(), "joints");
+//	glUniformMatrix4fv(j, frameMatrices.size(), false, (float*)frameMatrices.data());
+//
+//	for (int i = 0; i < mage->GetSubMeshCount(); ++i) {
+//		glActiveTexture(GL_TEXTURE0);
+//		glBindTexture(GL_TEXTURE_2D, mageTextures[i]);
+//		snowMan->GetMesh()->DrawSubMesh(i);
+//	}
+//}
+
+//void Renderer::Drawskell() {
+//	BindShader(skellShader);
+//	glUniform1i(glGetUniformLocation(skellShader->GetProgram(), "diffuseTex"), 0);
+//
+//	UpdateShaderMatrices();
+//
+//	vector<Matrix4> frameMatrices;
+//	const Matrix4* invBindPose = skell->GetInverseBindPose();
+//	const Matrix4* frameData = skellAnim->GetJointData(skellCurrentFrame);
+//
+//	for (unsigned int i = 0; i < skell->GetJointCount(); ++i)
+//		frameMatrices.emplace_back(frameData[i] * invBindPose[i]);
+//
+//	int j = glGetUniformLocation(skellShader->GetProgram(), "joints");
+//	glUniformMatrix4fv(j, frameMatrices.size(), false, (float*)frameMatrices.data());
+//
+//	//modelMatrix = Matrix4::Translation(Vector3(1, -15, 1)) * Matrix4::Scale(Vector3(1, 1, 1)) * Matrix4::Rotation(180, Vector3(0, 1, 0));
+//
+//	for (int i = 0; i < skell->GetSubMeshCount(); ++i) {
+//		glActiveTexture(GL_TEXTURE0);
+//		glBindTexture(GL_TEXTURE_2D, skellTextures[i]);
+//		skell->DrawSubMesh(i);
+//	}
+//}
 
 void Renderer::DrawSkybox() {
 	glDepthMask(GL_FALSE);
@@ -209,15 +430,15 @@ void Renderer::DrawSkybox() {
 }
 
 void Renderer::DrawHeightmap() {
-	BindShader(lightShader);
+	BindShader(bumpShader);
 	SetShaderLight(*light);
-	glUniform3fv(glGetUniformLocation(lightShader->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
+	glUniform3fv(glGetUniformLocation(bumpShader->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
 
-	glUniform1i(glGetUniformLocation(lightShader->GetProgram(), "diffuseTex"), 0);
+	glUniform1i(glGetUniformLocation(bumpShader->GetProgram(), "diffuseTex"), 0);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, earthTex);
 
-	glUniform1i(glGetUniformLocation(lightShader->GetProgram(), "bumpTex"), 1);
+	glUniform1i(glGetUniformLocation(bumpShader->GetProgram(), "bumpTex"), 1);
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_2D, earthBump);
 
@@ -236,7 +457,8 @@ void Renderer::BuildNodeLists(SceneNode* from) {
 
 		if (from->GetColour().w < 1.0f) {
 			transparentNodeList.push_back(from);
-		} else {
+		}
+		else {
 			nodeList.push_back(from);
 		}
 	}
@@ -245,8 +467,8 @@ void Renderer::BuildNodeLists(SceneNode* from) {
 }
 
 void Renderer::SortNodeLists() {
-	std::sort(transparentNodeList.rbegin(),	transparentNodeList.rend(),	SceneNode::CompareByCameraDistance);
-	std::sort(nodeList.begin(),	nodeList.end(),	SceneNode::CompareByCameraDistance);
+	std::sort(transparentNodeList.rbegin(), transparentNodeList.rend(), SceneNode::CompareByCameraDistance);
+	std::sort(nodeList.begin(), nodeList.end(), SceneNode::CompareByCameraDistance);
 }
 
 void Renderer::ClearNodeLists() {
@@ -264,18 +486,26 @@ void Renderer::DrawNodes() {
 
 void Renderer::DrawNode(SceneNode* n) {
 	if (n->GetMesh()) {
-		Matrix4 model = n->GetWorldTransform() *
-			Matrix4::Scale(n->GetModelScale());
-		glUniformMatrix4fv(
-			glGetUniformLocation(glassShader->GetProgram(), "modelMatrix"), 1, false, model.values);
+		Shader* shader;
+		if (n->HasShader())
+			shader = n->GetShader();
+		else
+			shader = glassShader;
 
-		glUniform4fv(glGetUniformLocation(glassShader->GetProgram(), "nodeColour"), 1, (float*)&n->GetColour());
+		BindShader(shader);
+		UpdateShaderMatrices();
+		glUniform1i(glGetUniformLocation(shader->GetProgram(), "diffuseTex"), 0);
+
+		Matrix4 model = n->GetWorldTransform() * Matrix4::Scale(n->GetModelScale());
+		glUniformMatrix4fv(glGetUniformLocation(shader->GetProgram(), "modelMatrix"), 1, false, model.values);
+
+		glUniform4fv(glGetUniformLocation(shader->GetProgram(), "nodeColour"), 1, (float*)&n->GetColour());
 
 		glassTex = n->GetTexture();
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, glassTex);
 
-		glUniform1i(glGetUniformLocation(glassShader->GetProgram(), "useTexture"), glassTex);
+		glUniform1i(glGetUniformLocation(shader->GetProgram(), "useTexture"), glassTex);
 		n->Draw(*this);
 	}
 }
@@ -298,7 +528,7 @@ void Renderer::DrawWater() {
 	Vector3 hSize = hm->GetHeightmapSize();
 
 	modelMatrix = Matrix4::Translation(hSize * 0.5f) * Matrix4::Scale(hSize * 0.5f) * Matrix4::Rotation(-90, Vector3(1, 0, 0));
-
+	modelMatrix = modelMatrix * Matrix4::Translation(Vector3(0, 0, -0.75));
 	textureMatrix = Matrix4::Translation(Vector3(waterCycle, 0.0f, waterCycle)) * Matrix4::Scale(Vector3(10, 10, 10)) * Matrix4::Rotation(waterRotate, Vector3(0, 0, 1));
 
 

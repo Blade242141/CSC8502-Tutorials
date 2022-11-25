@@ -8,6 +8,7 @@ SceneNode::SceneNode(Mesh* mesh, Vector4 colour) {
 	texture = 0;
 	parent = NULL;
 	modelScale = Vector3(1, 1, 1);
+	shader = nullptr;
 }
 
 SceneNode::~SceneNode(void) {

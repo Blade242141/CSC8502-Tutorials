@@ -4,6 +4,8 @@
 #include "Vector4.h"
 #include "Mesh.h"
 #include <vector>
+#include "MeshMaterial.h"
+#include "Shader.h"
 
 class SceneNode {
 public:
@@ -45,6 +47,17 @@ public:
 
 	std::vector<SceneNode*>::const_iterator GetChildIteratorEnd() { return children.end(); }
 
+	//Added
+	MeshMaterial* GetMeshMaterial() const { return mat; }
+	void SetMeshMaterial(MeshMaterial* m) { mat = m; }
+
+	vector<GLuint> GetTextures() const { return textures; }
+	void SetTxtures(vector<GLuint> v) { textures = v; }
+
+	Shader* GetShader() const { return shader; }
+	void SetShader(Shader* s) { shader = s; }
+	bool HasShader() const { if (shader != nullptr) { return true; } else { return false; } }
+
 protected:
 	SceneNode* parent;
 	Mesh* mesh;
@@ -56,4 +69,9 @@ protected:
 	Vector3 modelScale;
 	Vector4 colour;
 	std::vector<SceneNode*> children;
+
+	//Added
+	MeshMaterial* mat;
+	vector<GLuint> textures;
+	Shader* shader;
 };
