@@ -19,6 +19,7 @@ public:
 
 	void RenderScene() override;
 	void UpdateScene(float dt) override;
+	void ToggleAutoCam();
 
 protected:
 	void SetUpTex();
@@ -30,6 +31,11 @@ protected:
 	void DrawMage();
 	//void DrawObjs();
 	//void Drawskell();
+	void LoadCameraPoints(Vector3 orthPoint);
+
+	SceneNode* camPoints[5];
+	float camTimer;
+	int locked;
 
 	Shader* bumpShader;
 	Shader* reflectShader;
@@ -40,6 +46,10 @@ protected:
 
 	Light* light;
 	Camera* camera;
+	//Light* smallLight;
+
+	void SwitchToPerspective();
+	void SwitchToOrthographic();
 
 	GLuint cubeMap;
 	GLuint waterTex;
@@ -65,9 +75,9 @@ protected:
 	//SceneNode* snowMan;
 	//Shader* snowManShader;
 
-	//Mesh* cube;
+	Mesh* cube;
 	//Shader* glowShader;
-	//GLuint glowTex;
+	GLuint cubeTex;
 
 	void PrepHDRTex();
 	Frustum frameFrustum;
@@ -84,7 +94,7 @@ protected:
 	int mageCurrentFrame;
 	float mageFrameTime;
 
-	void SpawnRocks();
+	void LoadScene();
 	Mesh* rock1;
 	Mesh* rock2;
 	Mesh* rock3;

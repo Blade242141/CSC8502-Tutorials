@@ -9,7 +9,7 @@
 #include "../nclgl/SceneNode.h"
 
 Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
-
+	locked = false;
 	quad = Mesh::GenerateQuad();
 	glassQuad = Mesh::GenerateQuad();
 
@@ -31,13 +31,12 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	Vector3 heightmapSize = hm->GetHeightmapSize();
 	camera = new Camera(0.0f, 0.0f, Vector3(6992, 190, 6996));//heightmapSize * Vector3(0.5f, 5.0f, 0.5f));
 	light = new Light(heightmapSize * Vector3(0.5f, 1.5f, 0.5f), Vector4(1, 1, 1, 10), heightmapSize.x * 1.5);
-
 	//Load Objects into Scene
 
 
 
 	SpawnObjs();
-	projMatrix = Matrix4::Perspective(1.0f, 10000.0f, (float)width / (float)height, 45.0f);
+	SwitchToPerspective();
 
 	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_BLEND);
@@ -99,24 +98,24 @@ void Renderer::SetUpTex() {
 	//glowTex = SOIL_load_OGL_texture(TEXTUREDIR"purple.png", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
 
 	//Night Galaxy
-	//cubeMap = SOIL_load_OGL_cubemap(
-	//	CTEXTUREDIR"Left.jpg",
-	//	CTEXTUREDIR"Right.jpg",
-	//	CTEXTUREDIR"Up.jpg",
-	//	CTEXTUREDIR"Down.jpg",
-	//	CTEXTUREDIR"Front.jpg",
-	//	CTEXTUREDIR"Back.jpg",
-	//	SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, 0);
+	cubeMap = SOIL_load_OGL_cubemap(
+		CTEXTUREDIR"Left.jpg",
+		CTEXTUREDIR"Right.jpg",
+		CTEXTUREDIR"Up.jpg",
+		CTEXTUREDIR"Down.jpg",
+		CTEXTUREDIR"Front.jpg",
+		CTEXTUREDIR"Back.jpg",
+		SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, 0);
 
 	//Day Little Cloudy
-	cubeMap = SOIL_load_OGL_cubemap(
-		CTEXTUREDIR"MLeft.png",
-		CTEXTUREDIR"MRight.png",
-		CTEXTUREDIR"MUp.png",
-		CTEXTUREDIR"MDown.png",
-		CTEXTUREDIR"MFront.png",
-		CTEXTUREDIR"MBack.png",
-		SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, 0);
+	//cubeMap = SOIL_load_OGL_cubemap(
+	//	CTEXTUREDIR"MLeft.png",
+	//	CTEXTUREDIR"MRight.png",
+	//	CTEXTUREDIR"MUp.png",
+	//	CTEXTUREDIR"MDown.png",
+	//	CTEXTUREDIR"MFront.png",
+	//	CTEXTUREDIR"MBack.png",
+	//	SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, 0);
 
 	if (!earthTex || !earthBump || !cubeMap || !waterTex || !glassTex || !cracksTex || !poisonTex)
 		return;
@@ -156,12 +155,12 @@ void Renderer::SpawnObjs() {
 
 	//root->AddChild(snowMan);
 
-	SpawnRocks();
+	LoadScene();
 	SpawnMage();
 	//Spawnskell();
 }
 
-void Renderer::SpawnRocks() {
+void Renderer::LoadScene() {
 	Vector3 hmSize = hm->GetHeightmapSize();
 
 	SceneNode* rockParent = new SceneNode();
@@ -173,12 +172,21 @@ void Renderer::SpawnRocks() {
 	rockParent->SetModelScale(Vector3(100.0f, 100.0f, 100.0f));
 	rockParent->SetBoundingRadius(1.0f);
 
-
 	rock1 = Mesh::LoadFromMeshFile("Coursework/Rocks/Rock1.msh");
 	rock2 = Mesh::LoadFromMeshFile("Coursework/Rocks/Rock2.msh");
 	rock3 = Mesh::LoadFromMeshFile("Coursework/Rocks/Rock3.msh");
 	rock4 = Mesh::LoadFromMeshFile("Coursework/Rocks/Rock4.msh");
 	rock5 = Mesh::LoadFromMeshFile("Coursework/Rocks/Rock5.msh");
+	cube = Mesh::LoadFromMeshFile("OffsetCubeY.msh");
+
+	SceneNode* refletCube = new SceneNode();
+	refletCube->SetMesh(cube);
+	refletCube->SetColour(Vector4(0.5f, 0.5f, 0.5f, 1));
+	refletCube->SetShader(reflectShader);
+	refletCube->SetTransform(Matrix4::Translation(Vector3(0, 0, 0)));
+	refletCube->SetBoundingRadius(1);
+	refletCube->SetModelScale(Vector3(25, 25, 25));
+	//refletCube->SetTexture(cubeTex);
 
 	SceneNode* rockA = new SceneNode();
 	rockA->SetMesh(rock1);
@@ -243,6 +251,8 @@ void Renderer::SpawnRocks() {
 	rockG->SetTexture(poisonTex);
 	rockG->SetShader(bumpShader);
 
+	//smallLight = new Light(Vector3((hmSize.x * 0.5) - 200, 250, (hmSize.z * 0.5) - 200), Vector4(70, 36, 183, 1), 50.0f);
+
 	root->AddChild(rockParent);
 	rockParent->AddChild(rockA);
 	rockParent->AddChild(rockB);
@@ -251,6 +261,39 @@ void Renderer::SpawnRocks() {
 	rockParent->AddChild(rockE);
 	rockParent->AddChild(rockF);
 	rockParent->AddChild(rockG);
+	rockParent->AddChild(refletCube);
+	LoadCameraPoints(refletCube->GetTransform().GetPositionVector());
+}
+
+void Renderer::LoadCameraPoints(Vector3 orthPoint) {
+	SceneNode* cameraPointParent = new SceneNode();
+	SceneNode* point1 = new SceneNode();
+	point1->SetTransform(Matrix4::Translation(Vector3(7165.55f, 889.969f, 5530.38f)));
+	camPoints[0] = point1;
+
+	SceneNode* point2 = new SceneNode();
+	point2->SetTransform(Matrix4::Translation(Vector3(9027.21f, 209.974f, 7878.02f)));
+	camPoints[1] = point2;
+
+	SceneNode* point3 = new SceneNode();
+	point3->SetTransform(Matrix4::Translation(Vector3(7897.7f, 209.974f, 7770.87f)));
+	camPoints[2] = point3;
+
+	SceneNode* point4 = new SceneNode();
+	point4->SetTransform(Matrix4::Translation(Vector3(7236.06f, 270.013f, 8187.66f)));
+	camPoints[3] = point4;
+
+	SceneNode* point5 = new SceneNode();
+	point5->SetTransform(Matrix4::Translation(orthPoint));
+	camPoints[4] = point5;
+
+	root->AddChild(cameraPointParent);
+	cameraPointParent->AddChild(point1);
+	cameraPointParent->AddChild(point2);
+	cameraPointParent->AddChild(point3);
+	cameraPointParent->AddChild(point4);
+	cameraPointParent->AddChild(point5);
+
 }
 
 void Renderer::SpawnMage() {
@@ -296,7 +339,43 @@ void Renderer::SpawnMage() {
 //	skellFrameTime = 0.0f;
 //}
 
+float timer = 20;
+int camNo = 0;
 void Renderer::UpdateScene(float dt) {
+	timer -= dt;
+	if (locked == 1) {
+
+		if (timer <= 0) {
+			camNo++;
+			timer = 20;
+		}
+
+		switch (camNo) {
+		case 0:
+			camera->SetPosition(camPoints[0]->GetTransform().GetPositionVector());
+			SwitchToPerspective();
+			break;
+		case 1:
+			camera->SetPosition(camPoints[1]->GetTransform().GetPositionVector());
+			SwitchToPerspective();
+			break;
+		case 2:
+			camera->SetPosition(camPoints[2]->GetTransform().GetPositionVector());
+			SwitchToPerspective();
+			break;
+		case 3:
+			camera->SetPosition(camPoints[3]->GetTransform().GetPositionVector());
+			SwitchToPerspective();
+			break;
+		case 4:
+			camera->SetPosition(camPoints[4]->GetTransform().GetPositionVector());
+			SwitchToOrthographic();
+			break;
+		default:
+			camNo = 0;
+		}
+	}
+
 	camera->UpdateCamera(dt * 20);
 	viewMatrix = camera->BuildViewMatrix();
 	frameFrustum.FromMatrix(projMatrix * viewMatrix);
@@ -361,7 +440,7 @@ void Renderer::DrawMage() {
 	int j = glGetUniformLocation(mageShader->GetProgram(), "joints");
 	glUniformMatrix4fv(j, frameMatrices.size(), false, (float*)frameMatrices.data());
 
-	//modelMatrix = Matrix4::Translation(Vector3(1, 1, 1)) * Matrix4::Scale(Vector3(100, 100, 100)) * Matrix4::Rotation(180, Vector3(0, 1, 0));
+	modelMatrix = Matrix4::Translation((camPoints[4]->GetTransform().GetPositionVector())) * Matrix4::Scale(Vector3(100, 100, 100)) * Matrix4::Rotation(180, Vector3(0, 1, 0));
 
 
 	for (int i = 0; i < mage->GetSubMeshCount(); ++i) {
@@ -536,4 +615,18 @@ void Renderer::DrawWater() {
 	//SetShaderLight(*light);
 
 	quad->Draw();
+}
+
+void Renderer::SwitchToPerspective() {
+	projMatrix = Matrix4::Perspective(1.0f, 10000.0f, (float)width / (float)height, 45.0f);
+}
+
+void Renderer::SwitchToOrthographic() {
+	projMatrix = Matrix4::Orthographic(-1.0f, 10000.0f, width / 2.0f, -width / 2.0f, height / 2.0f, -height / 2.0f);
+}
+
+void Renderer::ToggleAutoCam() {
+	std::cout << locked << std::endl;
+	locked >= 1 ? locked = 0 : locked = 1;
+	std::cout << locked << std::endl;
 }

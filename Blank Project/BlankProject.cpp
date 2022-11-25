@@ -20,6 +20,9 @@ int main()	{
 		if (Window::GetKeyboard()->KeyDown(KEYBOARD_F5)) {
 			Shader::ReloadAllShaders();
 		}
+		if (Window::GetKeyboard()->KeyDown(KEYBOARD_K) && Window::GetKeyboard()->KeyTriggered(KEYBOARD_K)) {
+			renderer.ToggleAutoCam();
+		}
 	}
 	return 0;
 }
