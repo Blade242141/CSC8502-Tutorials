@@ -1,16 +1,8 @@
 #pragma once
 
 #include "../nclgl/OGLRenderer.h"
-#include "../nclgl/Frustum.h"
-#include <algorithm>
-
-class HeightMap;
-class Camera;
-class Light;
-class Shader;
-class MeshMaterial;
-class MeshAnimation;
-class SceneNode;
+#include "../nclgl/HeightMap.h"
+#include "../nclgl/Camera.h"
 
 class Renderer : public OGLRenderer {
 public:
@@ -20,108 +12,49 @@ public:
 	void RenderScene() override;
 	void UpdateScene(float dt) override;
 	void ToggleAutoCam();
+	void ToggleCamPerspective();
+	void TogglePostProcessing();
 
 protected:
-	void SetUpTex();
-	void SpawnMage();
-	//void Spawnskell();
-	void DrawHeightmap();
-	void DrawWater();
-	void DrawSkybox();
-	void DrawMage();
-	//void DrawObjs();
-	//void Drawskell();
-	void LoadCameraPoints(Vector3 orthPoint);
-	void SpawnObjs();
-	void BuildNodeLists(SceneNode* from);
-	void SortNodeLists();
-	void ClearNodeLists();
-	void DrawNodes();
-	void DrawNode(SceneNode* n);
-	void LoadScene();
+	void LoadTextures();
+	void LoadShaders();
 	void LoadPostProcessing();
-	void DrawPostProcessing();
-	void ShowScene();
+
+	void PresentScene();
+	void DrawPostProcess();
+	void DrawScene();
+	void DrawSkybox();
+	void DrawHeightMap();
+	void DrawWater();
+
 	void SwitchToPerspective();
 	void SwitchToOrthographic();
-	void TogglePostProcessing();
-	void DrawScene();
-	void ToggleCamPerspective();
 
-	float camTimer;
-	int locked;
-	int isPerspective;
-	int isPostProcessing;
+	Shader* skyboxShader;
+	Shader* reflectShader;
+	Shader* sceneShader;
+	Shader* processShader;
 
-	HeightMap* hm;
-	Light* light;
-	//Light* smallLight;
 	Camera* camera;
 
-	float waterRotate;
-	float waterCycle;
+	Mesh* quad;
+	Mesh* waterQuad;
+	HeightMap* hm;
 
 	GLuint cubeMap;
-	GLuint waterTex;
-	GLuint earthTex;
-	GLuint earthBump;
-	GLuint cracksTex;
-	GLuint poisonTex;
-	GLuint glassTex;
-
-	Frustum frameFrustum;
-
-	SceneNode* root;
-	vector <SceneNode*> transparentNodeList;
-	vector <SceneNode*> nodeList;
-	SceneNode* camPoints[5];
-
-	Mesh* glassQuad;
-	Mesh* rock1;
-	Mesh* rock2;
-	Mesh* rock3;
-	Mesh* rock4;
-	Mesh* rock5;
-	Mesh* cube;
-	GLuint cubeTex;
-	Mesh* quad;
-	Mesh* postQuad;
-
-
-	//Shader* glowShader;
-	Shader* glassShader;
-	Shader* bumpShader;
-	Shader* reflectShader;
-	Shader* skyboxShader;
-
-	//Mage 
-	Mesh* mage;
-	MeshAnimation* mageAnim;
-	MeshMaterial* mageMat;
-	Shader* mageShader;
-	vector<GLuint> mageTextures;
-	int mageCurrentFrame;
-	float mageFrameTime;
-
-	//skell
-	//Mesh* skell;
-	//MeshAnimation* skellAnim;
-	//MeshMaterial* skellMat;
-	//Shader* skellShader;
-	//vector<GLuint> skellTextures;
-	//int skellCurrentFrame;
-	//float skellFrameTime;
-
-	//SceneNode* snowMan;
-	//Shader* snowManShader;
-
-	Shader* processShader;
 	GLuint heightTexture;
+	GLuint waterTex;
+
 	GLuint bufferFBO;
 	GLuint processFBO;
 	GLuint bufferColourTex[2];
 	GLuint bufferDepthTex;
 
+	float waterRotate;
+	float waterCycle;
 	float timer;
 	int camNo;
+	int locked;
+	int isPerspective;
+	int isPostProcessing;
 };

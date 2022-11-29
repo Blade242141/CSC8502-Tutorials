@@ -128,7 +128,6 @@ void Renderer::UpdateScene(float dt) {
 	//Water cycle
 	waterRotate += dt * 1.0f;
 	waterCycle += dt * 0.25f;
-
 }
 
 void Renderer::RenderScene() {
@@ -140,9 +139,10 @@ void Renderer::RenderScene() {
 void Renderer::DrawScene() {
 	glBindFramebuffer(GL_FRAMEBUFFER, bufferFBO);
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+	
 	DrawSkybox();
+	DrawWater();
 	DrawHeightMap();
-	//DrawWater(); Had to comment out as it messes with post processing
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
@@ -188,9 +188,8 @@ void Renderer::DrawWater() {
 
 	modelMatrix = Matrix4::Translation(hSize * 0.5f) * Matrix4::Scale(hSize * 0.5f) * Matrix4::Rotation(-90, Vector3(1, 0, 0));
 	modelMatrix = modelMatrix * Matrix4::Translation(Vector3(0, 0, -0.75));
-
 	textureMatrix = Matrix4::Translation(Vector3(waterCycle, 0.0f, waterCycle)) * Matrix4::Scale(Vector3(10, 10, 10)) * Matrix4::Rotation(waterRotate, Vector3(0, 0, 1));
-
+	
 	UpdateShaderMatrices();
 
 	waterQuad->Draw();
@@ -205,6 +204,7 @@ void Renderer::DrawPostProcess() {
 	modelMatrix.ToIdentity();
 	viewMatrix.ToIdentity();
 	projMatrix.ToIdentity();
+	textureMatrix.ToIdentity();
 	UpdateShaderMatrices();
 
 	glDisable(GL_DEPTH_TEST);
@@ -232,13 +232,13 @@ void Renderer::DrawPostProcess() {
 }
 
 void Renderer::PresentScene() {
-
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 	BindShader(sceneShader);
 	modelMatrix.ToIdentity();
 	viewMatrix.ToIdentity();
 	projMatrix.ToIdentity();
+	//textureMatrix.ToIdentity();
 	UpdateShaderMatrices();
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, bufferColourTex[0]);

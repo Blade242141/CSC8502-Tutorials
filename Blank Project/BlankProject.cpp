@@ -21,7 +21,7 @@ int main()	{
 			Shader::ReloadAllShaders();
 		}
 		if (Window::GetKeyboard()->KeyDown(KEYBOARD_K) && Window::GetKeyboard()->KeyTriggered(KEYBOARD_K)) {
-			renderer.ToggleAutoCam();
+			//renderer.ToggleAutoCam();
 		}
 	}
 	return 0;

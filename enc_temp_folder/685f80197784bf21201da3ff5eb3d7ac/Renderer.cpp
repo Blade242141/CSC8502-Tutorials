@@ -140,9 +140,10 @@ void Renderer::RenderScene() {
 void Renderer::DrawScene() {
 	glBindFramebuffer(GL_FRAMEBUFFER, bufferFBO);
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+	DrawWater();
+
 	DrawSkybox();
 	DrawHeightMap();
-	//DrawWater(); Had to comment out as it messes with post processing
 
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
