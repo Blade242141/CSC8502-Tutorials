@@ -32,58 +32,67 @@ protected:
 	//void DrawObjs();
 	//void Drawskell();
 	void LoadCameraPoints(Vector3 orthPoint);
-
-	SceneNode* camPoints[5];
-	float camTimer;
-	int locked;
-
-	Shader* bumpShader;
-	Shader* reflectShader;
-	Shader* skyboxShader;
-
-	HeightMap* hm;
-	Mesh* quad;
-
-	Light* light;
-	Camera* camera;
-	//Light* smallLight;
-
-	void SwitchToPerspective();
-	void SwitchToOrthographic();
-
-	GLuint cubeMap;
-	GLuint waterTex;
-	GLuint earthTex;
-	GLuint earthBump;
-	
-
-	float waterRotate;
-	float waterCycle;
-
 	void SpawnObjs();
 	void BuildNodeLists(SceneNode* from);
 	void SortNodeLists();
 	void ClearNodeLists();
 	void DrawNodes();
 	void DrawNode(SceneNode* n);
+	void LoadScene();
+	void LoadPostProcessing();
+	void DrawPostProcessing();
+	void ShowScene();
+	void SwitchToPerspective();
+	void SwitchToOrthographic();
+	void TogglePostProcessing();
+	void DrawScene();
+	void ToggleCamPerspective();
 
-	SceneNode* root;
-	Mesh* glassQuad;
-	Shader* glassShader;
+	float camTimer;
+	int locked;
+	int isPerspective;
+	int isPostProcessing;
+
+	HeightMap* hm;
+	Light* light;
+	//Light* smallLight;
+	Camera* camera;
+
+	float waterRotate;
+	float waterCycle;
+
+	GLuint cubeMap;
+	GLuint waterTex;
+	GLuint earthTex;
+	GLuint earthBump;
+	GLuint cracksTex;
+	GLuint poisonTex;
 	GLuint glassTex;
 
-	//SceneNode* snowMan;
-	//Shader* snowManShader;
-
-	Mesh* cube;
-	//Shader* glowShader;
-	GLuint cubeTex;
-
-	void PrepHDRTex();
 	Frustum frameFrustum;
 
+	SceneNode* root;
 	vector <SceneNode*> transparentNodeList;
 	vector <SceneNode*> nodeList;
+	SceneNode* camPoints[5];
+
+	Mesh* glassQuad;
+	Mesh* rock1;
+	Mesh* rock2;
+	Mesh* rock3;
+	Mesh* rock4;
+	Mesh* rock5;
+	Mesh* cube;
+	GLuint cubeTex;
+	Mesh* quad;
+	Mesh* postQuad;
+
+
+	//Shader* glowShader;
+	Shader* glassShader;
+	Shader* bumpShader;
+	Shader* reflectShader;
+	Shader* skyboxShader;
 
 	//Mage 
 	Mesh* mage;
@@ -94,15 +103,6 @@ protected:
 	int mageCurrentFrame;
 	float mageFrameTime;
 
-	void LoadScene();
-	Mesh* rock1;
-	Mesh* rock2;
-	Mesh* rock3;
-	Mesh* rock4;
-	Mesh* rock5;
-	GLuint cracksTex;
-	GLuint poisonTex;
-
 	//skell
 	//Mesh* skell;
 	//MeshAnimation* skellAnim;
@@ -111,4 +111,17 @@ protected:
 	//vector<GLuint> skellTextures;
 	//int skellCurrentFrame;
 	//float skellFrameTime;
+
+	//SceneNode* snowMan;
+	//Shader* snowManShader;
+
+	Shader* processShader;
+	GLuint heightTexture;
+	GLuint bufferFBO;
+	GLuint processFBO;
+	GLuint bufferColourTex[2];
+	GLuint bufferDepthTex;
+
+	float timer;
+	int camNo;
 };

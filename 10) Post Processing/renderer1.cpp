@@ -8,55 +8,44 @@
 #include "../nclgl/Frustum.h"
 #include "../nclgl/SceneNode.h"
 
-const int POST_PASSES = 10;
-
 Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
-	locked = 0;
+	locked = false;
 	timer = 20;
 	camNo = 0;
-	isPostProcessing = 0;
-	isPerspective = 1;
-	SwitchToPerspective();
-
 	quad = Mesh::GenerateQuad();
 	glassQuad = Mesh::GenerateQuad();
 
 	hm = new HeightMap(CTEXTUREDIR"hm.png");
 
 	SetUpTex();
+	//sceneShader = new Shader("TexturedVertex.glsl", "texturedFragment.glsl");
+	//processShader = new Shader("TexturedVertex.glsl", "processFrag.glsl");
+
 	mageShader = new Shader("SkinningVertex.glsl", "texturedFragment.glsl");
 	reflectShader = new Shader("ReflectVertex.glsl", "reflectFragment.glsl");
 	skyboxShader = new Shader("SkyboxVertex.glsl", "skyboxFragment.glsl");
 	bumpShader = new Shader("BumpVertex.glsl", "bumpFragment.glsl");
 	glassShader = new Shader("SceneVertex.glsl", "sceneFragment.glsl");
-	processShader = new Shader("TexturedVertex.glsl", "processfrag.glsl");
+
 	//snowManShader = new Shader("SkinningVertex.glsl", "texturedFragment.glsl");
 	//skellShader = new Shader("SkinningVertex.glsl", "texturedFragment.glsl");
 	//glowShader = new Shader("SceneVertex.glsl", "hdrFragment.glsl");
 
-	if (!reflectShader->LoadSuccess())// || !mageShader->LoadSuccess()); // || !snowManShader->LoadSuccess()) //!skellShader->LoadSuccess())
-		return;
-	if (!skyboxShader->LoadSuccess())
-		return;
-	if (!bumpShader->LoadSuccess())
-		return;
-	if (!glassShader->LoadSuccess())
-		return;
-	if (!mageShader->LoadSuccess())
-		return;
-	if (!processShader->LoadSuccess())
+																																	// mageShader was causing game to crash
+	if (!reflectShader->LoadSuccess() || !skyboxShader->LoadSuccess() || !bumpShader->LoadSuccess() || !glassShader->LoadSuccess())// || !mageShader->LoadSuccess()); // || !snowManShader->LoadSuccess()) //!skellShader->LoadSuccess())
 		return;
 
 	Vector3 heightmapSize = hm->GetHeightmapSize();
-	camera = new Camera(0.0f, 0.0f, Vector3(6992, 190, 6996));//heightmapSize * Vector3(0.5f, 5.0f, 0.5f));
+	camera = new Camera(0.0f, 0.0f, Vector3(6992, 190, 6996));
 	light = new Light(heightmapSize * Vector3(0.5f, 1.5f, 0.5f), Vector4(1, 1, 1, 10), heightmapSize.x * 1.5);
-	
-	//Load Objects into Scene
+
+	//postQuad = Mesh::GenerateQuad();
+
 	SpawnObjs();
+	SwitchToPerspective();
 
-	LoadPostProcessing();
+	/*Attempt at implementing post processing, just get a solid colour screen?, next was implement a HDR object then splitscreen cameras */
 
-	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
@@ -64,11 +53,42 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	waterCycle = 0.0f;
 
 	glEnable(GL_CULL_FACE);
+	/*
+	//glGenTextures(1, &bufferDepthTex);
+	//glBindTexture(GL_TEXTURE_2D, bufferDepthTex);
+	//glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+	//glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+	//glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	//glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	//glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, width, height, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, NULL);
+
+	//for (int i = 0; i < 2; ++i) {
+	//	glGenTextures(1, &bufferColourTex[i]);
+	//	glBindTexture(GL_TEXTURE_2D, bufferColourTex[i]);
+	//	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+	//	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+	//	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	//	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	//	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+	//}
+
+	//glGenFramebuffers(1, &bufferFBO);
+	//glGenFramebuffers(1, &processFBO);
+
+	//glBindFramebuffer(GL_FRAMEBUFFER, bufferFBO);
+	//glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, bufferDepthTex, 0);
+	//glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, bufferDepthTex, 0);
+	//glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, bufferColourTex[0], 0);
+
+	//if (glCheckFramebufferStatus(GL_FRAMEBUFFER) !=
+	//	GL_FRAMEBUFFER_COMPLETE || !bufferDepthTex || !bufferColourTex[0]) {
+	//	return;
+	//}
+	//glBindFramebuffer(GL_FRAMEBUFFER, 0);*/
+	glEnable(GL_DEPTH_TEST);
 
 	init = true;
 }
-
-#pragma region Setting Up Scene
 
 Renderer::~Renderer(void) {
 	delete camera;
@@ -103,6 +123,12 @@ Renderer::~Renderer(void) {
 	delete rock3;
 	delete rock4;
 	delete rock5;
+
+	//glDeleteTextures(2, bufferColourTex);
+	//glDeleteTextures(1, &bufferDepthTex);
+	//glDeleteFramebuffers(1, &bufferFBO);
+	//glDeleteFramebuffers(1, &processFBO);
+
 }
 
 void Renderer::SetUpTex() {
@@ -117,6 +143,7 @@ void Renderer::SetUpTex() {
 	//snowManSmoothness = SOIL_load_OGL_texture(CTEXTUREDIR"Snow Man_01_Body_MetallicSmoothness.png", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
 	//glowTex = SOIL_load_OGL_texture(TEXTUREDIR"purple.png", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
 
+	//Different night and day cubemaps
 	//Night Galaxy
 	cubeMap = SOIL_load_OGL_cubemap(
 		CTEXTUREDIR"Left.jpg",
@@ -148,17 +175,16 @@ void Renderer::SetUpTex() {
 void Renderer::SpawnObjs() {
 	root = new SceneNode();
 
-
-	/*Spawn cube for HDR shader*/
+	/*Spawn cube for HDR shader
 	//cube = Mesh::LoadFromMeshFile("OffsetCubeY.msh");
 	//SceneNode* glowCube = new SceneNode(cube, Vector4(0.5, 0.5, 0.5, 1));
 	//glowCube->SetModelScale(Vector3(25, 25, 25));
 	//glowCube->SetBoundingRadius(100.0f);
 	//glowCube->SetTransform(Matrix4::Translation(Vector3(50, 10, 50)));
 	//glowCube->SetTexture(glowTex);
-	//root->AddChild(glowCube);
+	//root->AddChild(glowCube); */
 
-	/*Attempt to spawn a humaniod mesh with material as an SceneNode*/
+	/*Attempt to spawn a humaniod mesh with material as an SceneNode
 	//snowMan = new SceneNode();
 	//snowMan->SetMesh(Mesh::LoadFromMeshFile("Coursework/SnowMan/snowman.msh"));
 	//snowMan->SetTransform(Matrix4::Translation(Vector3(1, 1, 1)));
@@ -173,7 +199,7 @@ void Renderer::SpawnObjs() {
 	//	snowMan->GetTextures().emplace_back(texID);
 	//}
 
-	//root->AddChild(snowMan);
+	//root->AddChild(snowMan); */
 
 	LoadScene();
 	SpawnMage();
@@ -206,7 +232,6 @@ void Renderer::LoadScene() {
 	refletCube->SetTransform(Matrix4::Translation(Vector3(0, 0, 0)));
 	refletCube->SetBoundingRadius(1);
 	refletCube->SetModelScale(Vector3(25, 25, 25));
-	//refletCube->SetTexture(cubeTex);
 
 	SceneNode* rockA = new SceneNode();
 	rockA->SetMesh(rock1);
@@ -317,8 +342,6 @@ void Renderer::LoadCameraPoints(Vector3 orthPoint) {
 }
 
 void Renderer::SpawnMage() {
-	//mage = new SceneNode(Mesh::LoadFromMeshFile("Coursework/Mage/Mage.msh"));
-
 	mage = Mesh::LoadFromMeshFile("Coursework/Mage/Mage.msh");
 	mageAnim = new MeshAnimation("Coursework/Mage/anim.anm");
 	mageMat = new MeshMaterial("Coursework/Mage/Mage.mat");
@@ -334,49 +357,9 @@ void Renderer::SpawnMage() {
 
 	mageCurrentFrame = 0;
 	mageFrameTime = 0.0f;
-	//mage->SetTransform(Matrix4::Translation(Vector3(0, 100.0f, -300.0f + 100.0f + 100)));
-	//mage->SetModelScale(Vector3(100.0f, 100.0f, 100.0f));
-
-	//mage->SetTransform(Matrix4::Rotation(90.0f, Vector3(1, 0, 0)));
-	//mage->SetBoundingRadius(100.0f);
-	//root->AddChild(mage);
-}
-void Renderer::LoadPostProcessing() {
-	glGenTextures(1, &bufferDepthTex);
-	glBindTexture(GL_TEXTURE_2D, bufferDepthTex);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, width, height, 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, NULL);
-
-
-	for (int i = 0; i < 2; ++i) {
-		glGenTextures(1, &bufferColourTex[i]);
-		glBindTexture(GL_TEXTURE_2D, bufferColourTex[i]);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-	}
-
-	glGenFramebuffers(1, &bufferFBO); //We’ll render the scene into this
-	glGenFramebuffers(1, &processFBO);//And do post processing in this
-
-	glBindFramebuffer(GL_FRAMEBUFFER, bufferFBO);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, bufferDepthTex, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_STENCIL_ATTACHMENT, GL_TEXTURE_2D, bufferDepthTex, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, bufferColourTex[0], 0);
-
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE || !bufferDepthTex || !bufferColourTex[0]) {
-		std::cout << "Error, FBO attachment was not successful!" << std::endl;
-		return;
-	}
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	glEnable(GL_DEPTH_TEST);
 }
 
+/*This was not displayed correctly, probably becuase the player model was holding weapons
 //void Renderer::Spawnskell() {
 //	skell = Mesh::LoadFromMeshFile("Coursework/skell/skell.msh");
 //	skellAnim = new MeshAnimation("Coursework/skell/anim.anm");
@@ -392,12 +375,151 @@ void Renderer::LoadPostProcessing() {
 //	}
 //	skellCurrentFrame = 0;
 //	skellFrameTime = 0.0f;
-//}
+//} */
 
 
-#pragma endregion
+void Renderer::UpdateScene(float dt) {
+	timer -= dt;
+	if (locked == 1) {
 
-#pragma region Draw Scene
+		if (timer <= 0) {
+			camNo++;
+			timer = 20;
+		}
+
+		switch (camNo) {
+		case 0:
+			camera->SetPosition(camPoints[0]->GetTransform().GetPositionVector());
+			SwitchToPerspective();
+			isPerspective = 1;
+			break;
+		case 1:
+			camera->SetPosition(camPoints[1]->GetTransform().GetPositionVector());
+			SwitchToPerspective();
+			isPerspective = 1;
+			break;
+		case 2:
+			camera->SetPosition(camPoints[2]->GetTransform().GetPositionVector());
+			SwitchToPerspective();
+			isPerspective = 1;
+			break;
+		case 3:
+			camera->SetPosition(camPoints[3]->GetTransform().GetPositionVector());
+			SwitchToPerspective();
+			isPerspective = 1;
+			break;
+		case 4:
+			camera->SetPosition(camPoints[4]->GetTransform().GetPositionVector());
+			SwitchToOrthographic();
+			isPerspective = 0;
+			break;
+		default:
+			camNo = 0;
+		}
+	}
+
+	camera->UpdateCamera(dt * 20);
+	viewMatrix = camera->BuildViewMatrix();
+	frameFrustum.FromMatrix(projMatrix * viewMatrix);
+	root->Update(dt);
+	
+	if (Window::GetKeyboard()->KeyDown(KEYBOARD_L))
+		std::cout << "x = " << camera->GetPosition().x << ", y = " << camera->GetPosition().y << ", z = " << camera->GetPosition().z << std::endl;
+
+	waterRotate += dt * 1.0f;
+	waterCycle += dt * 0.25f;
+
+	mageFrameTime -= dt;
+	while (mageFrameTime < 0.0f) {
+		mageCurrentFrame = (mageCurrentFrame + 1) % mageAnim->GetFrameCount();
+		mageFrameTime += 1.0f / mageAnim->GetFrameRate();
+	}
+
+	/*Skell was animated but the body mesh would not load correctly
+	//skellFrameTime -= dt;
+	//while (skellFrameTime < 0.0f) {
+	//	skellCurrentFrame = (skellCurrentFrame + 1) % skellAnim->GetFrameCount();
+	//	skellFrameTime += 1.0f / skellAnim->GetFrameRate();
+	//} */
+}
+
+void Renderer::RenderScene() {
+	//glBindFramebuffer(GL_FRAMEBUFFER, bufferFBO);
+	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT); // | GL_STENCIL_BUFFER_BIT);
+	//BindShader(sceneShader);
+	if (isPerspective)
+		projMatrix = Matrix4::Perspective(1.0f, 10000.0f, (float)width / (float)height, 45.0f);
+	else
+		projMatrix = Matrix4::Orthographic(-1.0f, 10000.0f, width / 2.0f, -width / 2.0f, height / 2.0f, -height / 2.0f);
+
+	UpdateShaderMatrices();
+
+	BuildNodeLists(root);
+	SortNodeLists();
+
+	DrawSkybox();
+	DrawHeightmap();
+	//Drawskell();	//Mesh loads incorrectly, axes move but humanoid is not correct 
+	DrawMage();
+	DrawWater();
+	//DrawObjs();	//Unable to get mesh to render on screen
+
+	DrawNodes();
+
+	//glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	//DrawPostProcess();
+	//PresentScene();
+
+	ClearNodeLists();
+}
+
+void Renderer::DrawPostProcess() {
+	glBindFramebuffer(GL_FRAMEBUFFER, processFBO);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, bufferColourTex[1], 0);
+	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+
+	BindShader(processShader);
+	modelMatrix.ToIdentity();
+	viewMatrix.ToIdentity();
+	projMatrix.ToIdentity();
+	UpdateShaderMatrices();
+
+	glDisable(GL_DEPTH_TEST);
+	glActiveTexture(GL_TEXTURE0);
+	glUniform1i(glGetUniformLocation(
+		processShader->GetProgram(), "sceneTex"), 0);
+	for (int i = 0; i < POST_PASSES; ++i) {
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+			GL_TEXTURE_2D, bufferColourTex[1], 0);
+		glUniform1i(glGetUniformLocation(processShader->GetProgram(), "isVertical"), 0);
+
+		glBindTexture(GL_TEXTURE_2D, bufferColourTex[0]);
+		postQuad->Draw();
+
+		glUniform1i(glGetUniformLocation(processShader->GetProgram(), "isVertical"), 1);
+		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0,
+			GL_TEXTURE_2D, bufferColourTex[0], 0);
+		glBindTexture(GL_TEXTURE_2D, bufferColourTex[1]);
+		postQuad->Draw();
+
+	}
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glEnable(GL_DEPTH_TEST);
+}
+
+void Renderer::PresentScene() {
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+	BindShader(sceneShader);
+	modelMatrix.ToIdentity();
+	viewMatrix.ToIdentity();
+	projMatrix.ToIdentity();
+	UpdateShaderMatrices();
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, bufferColourTex[0]);
+	glUniform1i(glGetUniformLocation(sceneShader->GetProgram(), "diffuseTex"), 0);
+	postQuad->Draw();
+}
 
 void Renderer::DrawMage() {
 	BindShader(mageShader);
@@ -486,7 +608,7 @@ void Renderer::DrawSkybox() {
 void Renderer::DrawHeightmap() {
 	BindShader(bumpShader);
 	SetShaderLight(*light);
-	glUniform3fv(glGetUniformLocation(bumpShader->GetProgram(), "cameraPos"), 1, (float*)& camera->GetPosition());
+	glUniform3fv(glGetUniformLocation(bumpShader->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
 
 	glUniform1i(glGetUniformLocation(bumpShader->GetProgram(), "diffuseTex"), 0);
 	glActiveTexture(GL_TEXTURE0);
@@ -553,7 +675,7 @@ void Renderer::DrawNode(SceneNode* n) {
 		Matrix4 model = n->GetWorldTransform() * Matrix4::Scale(n->GetModelScale());
 		glUniformMatrix4fv(glGetUniformLocation(shader->GetProgram(), "modelMatrix"), 1, false, model.values);
 
-		glUniform4fv(glGetUniformLocation(shader->GetProgram(), "nodeColour"), 1, (float*)& n->GetColour());
+		glUniform4fv(glGetUniformLocation(shader->GetProgram(), "nodeColour"), 1, (float*)&n->GetColour());
 
 		glassTex = n->GetTexture();
 		glActiveTexture(GL_TEXTURE0);
@@ -567,7 +689,7 @@ void Renderer::DrawNode(SceneNode* n) {
 void Renderer::DrawWater() {
 	BindShader(reflectShader);
 
-	glUniform3fv(glGetUniformLocation(reflectShader->GetProgram(), "cameraPos"), 1, (float*)& camera->GetPosition());
+	glUniform3fv(glGetUniformLocation(reflectShader->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
 
 	glUniform1i(glGetUniformLocation(reflectShader->GetProgram(), "diffuseTex"), 0);
 	glUniform1i(glGetUniformLocation(reflectShader->GetProgram(), "cubeTex"), 2);
@@ -583,153 +705,11 @@ void Renderer::DrawWater() {
 
 	modelMatrix = Matrix4::Translation(hSize * 0.5f) * Matrix4::Scale(hSize * 0.5f) * Matrix4::Rotation(-90, Vector3(1, 0, 0));
 	modelMatrix = modelMatrix * Matrix4::Translation(Vector3(0, 0, -0.75));
-	textureMatrix = Matrix4::Translation(Vector3(waterCycle, 0.0f, waterCycle)) * Matrix4::Scale(Vector3(10, 10, 10)) * Matrix4::Rotation(waterRotate, Vector3(0, 0, 1));
-
+	textureMatrix = Matrix4::Translation(Vector3(waterCycle, 0.0f, waterCycle)) * Matrix4::Scale(Vector3(10, 10, 10)) * Matrix4::Rotation(waterRotate, Vector3(0, 0, 1)); 
 
 	UpdateShaderMatrices();
-	//SetShaderLight(*light);
-
 	quad->Draw();
 }
-
-void Renderer::DrawScene() {
-	glBindFramebuffer(GL_FRAMEBUFFER, bufferFBO);
-	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-
-	BuildNodeLists(root);
-	SortNodeLists();
-
-	DrawSkybox();
-	DrawHeightmap();
-	DrawMage();
-	DrawWater();
-	DrawNodes();
-
-	ClearNodeLists();
-
-	BindShader(glassShader);
-	isPerspective == 1 ? SwitchToPerspective() : SwitchToOrthographic();
-	UpdateShaderMatrices();
-
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-}
-
-void Renderer::DrawPostProcessing() {
-	glBindFramebuffer(GL_FRAMEBUFFER, processFBO);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, bufferColourTex[1], 0);
-	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-
-	BindShader(processShader);
-	modelMatrix.ToIdentity();
-	viewMatrix.ToIdentity();
-	projMatrix.ToIdentity();
-	UpdateShaderMatrices();
-
-	glDisable(GL_DEPTH_TEST);
-
-	glActiveTexture(GL_TEXTURE0);
-	glUniform1i(glGetUniformLocation(processShader->GetProgram(), "sceneTex"), 0);
-	for (int i = 0; i < POST_PASSES; ++i) {
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, bufferColourTex[1], 0);
-		glUniform1i(glGetUniformLocation(processShader->GetProgram(), "isVertical"), 0);
-
-		glBindTexture(GL_TEXTURE_2D, bufferColourTex[0]);
-		quad->Draw();
-		//Now to swap the colour buffers , and do the second blur pass
-		glUniform1i(glGetUniformLocation(processShader->GetProgram(), "isVertical"), 1);
-		glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, bufferColourTex[0], 0);
-		glBindTexture(GL_TEXTURE_2D, bufferColourTex[1]);
-		quad->Draw();
-	}
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	glEnable(GL_DEPTH_TEST);
-}
-
-void Renderer::ShowScene() {
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-	BindShader(glassShader);
-	modelMatrix.ToIdentity();
-	viewMatrix.ToIdentity();
-	projMatrix.ToIdentity();
-	UpdateShaderMatrices();
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, bufferColourTex[0]);
-	glUniform1i(glGetUniformLocation(glassShader->GetProgram(), "diffuseTex"), 0);
-	quad->Draw();
-}
-
-#pragma endregion
-
-void Renderer::UpdateScene(float dt) {
-	timer -= dt;
-	if (locked == 1) {
-
-		if (timer <= 0) {
-			camNo++;
-			timer = 20;
-		}
-
-		switch (camNo) {
-		case 0:
-			camera->SetPosition(camPoints[0]->GetTransform().GetPositionVector());
-			ToggleCamPerspective();
-			break;
-		case 1:
-			camera->SetPosition(camPoints[1]->GetTransform().GetPositionVector());
-			break;
-		case 2:
-			camera->SetPosition(camPoints[2]->GetTransform().GetPositionVector());
-			break;
-		case 3:
-			camera->SetPosition(camPoints[3]->GetTransform().GetPositionVector());
-			break;
-		case 4:
-			camera->SetPosition(camPoints[4]->GetTransform().GetPositionVector());
-			ToggleCamPerspective();
-			break;
-		default:
-			camNo = 0;
-		}
-	}
-
-	camera->UpdateCamera(dt * 20);
-	viewMatrix = camera->BuildViewMatrix();
-	frameFrustum.FromMatrix(projMatrix * viewMatrix);
-	root->Update(dt);
-
-	if (Window::GetKeyboard()->KeyDown(KEYBOARD_L))
-		std::cout << "x = " << camera->GetPosition().x << ", y = " << camera->GetPosition().y << ", z = " << camera->GetPosition().z << std::endl;
-
-
-	//Water cycle
-	waterRotate += dt * 1.0f;
-	waterCycle += dt * 0.25f;
-
-	mageFrameTime -= dt;
-	//skellFrameTime -= dt;
-	while (mageFrameTime < 0.0f) {
-		mageCurrentFrame = (mageCurrentFrame + 1) % mageAnim->GetFrameCount();
-		mageFrameTime += 1.0f / mageAnim->GetFrameRate();
-	}
-	//while (skellFrameTime < 0.0f) {
-	//	skellCurrentFrame = (skellCurrentFrame + 1) % skellAnim->GetFrameCount();
-	//	skellFrameTime += 1.0f / skellAnim->GetFrameRate();
-	//}
-}
-
-void Renderer::RenderScene() {
-	DrawScene();
-	DrawPostProcessing();
-	ShowScene();
-	//PrepHDRTex();
-
-	//Drawskell();	//Mesh loads incorrectly, axes move but humanoid is not correct 
-
-	//DrawObjs();	//Unable to get mesh to render on screen
-}
-
-#pragma region Switch Perspectives
 
 void Renderer::SwitchToPerspective() {
 	projMatrix = Matrix4::Perspective(1.0f, 10000.0f, (float)width / (float)height, 45.0f);
@@ -739,22 +719,8 @@ void Renderer::SwitchToOrthographic() {
 	projMatrix = Matrix4::Orthographic(-1.0f, 10000.0f, width / 2.0f, -width / 2.0f, height / 2.0f, -height / 2.0f);
 }
 
-#pragma endregion
-
-#pragma region Toggle Options
-
 void Renderer::ToggleAutoCam() {
+	std::cout << locked << std::endl;
 	locked >= 1 ? locked = 0 : locked = 1;
+	std::cout << locked << std::endl;
 }
-
-void Renderer::TogglePostProcessing() {
-	std::cout << isPostProcessing << std::endl;
-	isPostProcessing >= 1 ? isPostProcessing = 0 : isPostProcessing = 1;
-	std::cout << isPostProcessing << std::endl;
-}
-
-void Renderer::ToggleCamPerspective() {
-	isPerspective >= 1 ? isPerspective = 0 : isPerspective = 1;
-}
-
-#pragma endregion
