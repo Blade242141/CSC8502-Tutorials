@@ -54,8 +54,16 @@ public:
 	vector<GLuint> GetTextures() const { return textures; }
 	void SetTxtures(vector<GLuint> v) { textures = v; }
 
+	bool bump;
 	GLuint GetBumpTextures() const { return bumpTexture; }
-	void SetBumpTxtures(GLuint t) { bumpTexture = t; }
+	void SetBumpTxtures(GLuint t) { bumpTexture = t; bump = true; }
+	bool HasBump() const { return bump; }
+
+	bool metal;
+	GLuint GetMetalTexture() const { return metalnessTexture; }
+	void SetMetalTexture(GLuint t) { metalnessTexture = t; metal = true; }
+	bool HasMetal() const { return metal; }
+
 
 	Shader* GetShader() const { return shader; }
 	void SetShader(Shader* s) { shader = s; }
@@ -78,4 +86,5 @@ protected:
 	MeshMaterial* mat;
 	vector<GLuint> textures;
 	Shader* shader;
+	GLuint metalnessTexture;
 };

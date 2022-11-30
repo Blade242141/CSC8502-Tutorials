@@ -22,6 +22,8 @@ public:
 	void ToggleAutoCam();
 	void ToggleCamPerspective();
 	void TogglePostProcessing();
+	void ToggleBEV();
+	void RightScene();
 
 protected:
 	void LoadTextures(); // Loads Textures
@@ -33,7 +35,7 @@ protected:
 	void LoadGolem();
 	void LoadSceneGraph();
 	void LoadCameraPoints();
-	SceneNode* LoadRock(Mesh* mesh, Vector4 colour, Vector3 scale, Vector3 pos, GLuint tex, Shader* shader);
+	SceneNode* LoadRock(Mesh* mesh, Vector4 colour, Vector3 scale, Vector3 pos, GLuint tex, GLuint bump, Shader* shader);
 
 	void PresentScene();
 	void DrawPostProcess();
@@ -62,7 +64,10 @@ protected:
 	Shader* glassShader;
 	Shader* golemShader;
 
+	Shader* barrelShader;
+
 	Camera* camera;
+	Camera* bev;
 
 	Light* light;
 
@@ -92,6 +97,10 @@ protected:
 	GLuint glassTex;
 	GLuint cubeTex;
 
+	GLuint barrelBase;
+	GLuint barrelNormal;
+	GLuint barrelMetal;
+
 	Vector3 glassParentPos;
 	Mesh* glassQuad;
 	Mesh* rock1;
@@ -101,6 +110,7 @@ protected:
 	Mesh* rock5;
 	Mesh* cube;
 	Mesh* quad;
+	Mesh* barrel;
 
 	// Mage Vars
 	Mesh* mageMesh;
@@ -125,4 +135,5 @@ protected:
 	int locked;
 	int isPerspective;
 	int isPostProcessing;
+	int isBEV;
 };

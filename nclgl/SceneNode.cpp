@@ -9,6 +9,10 @@ SceneNode::SceneNode(Mesh* mesh, Vector4 colour) {
 	parent = NULL;
 	modelScale = Vector3(1, 1, 1);
 	shader = nullptr;
+	bumpTexture = 0;
+	metalnessTexture = 0;
+	metal = false;
+	bump = false;
 }
 
 SceneNode::~SceneNode(void) {

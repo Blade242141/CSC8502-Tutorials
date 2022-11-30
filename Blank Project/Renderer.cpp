@@ -17,28 +17,29 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 	camNo = 0;
 	
 	isPostProcessing = 0;
-
+	isBEV = false;
 	waterRotate = 0.0f;
 	waterCycle = 0.0f;
 
 	isPerspective = 1;
 	SwitchToPerspective();
 
-	camera = new Camera(-25.0f, 225.0f, Vector3(-150.0f, 250.0f, -150.0f));
-
+	camera = new Camera(0.0f, 225.0f, Vector3(6992, 200, 6996));
 	quad = Mesh::GenerateQuad();
 	waterQuad = Mesh::GenerateQuad();
 	glassQuad = Mesh::GenerateQuad();
 
 	hm = new HeightMap(CTEXTUREDIR"hm.png");
-	
 	LoadTextures();
 	LoadShaders();
 
-	if (!processShader->LoadSuccess() || !sceneShader->LoadSuccess())
+	if (!processShader->LoadSuccess() || !sceneShader->LoadSuccess())// || !barrelShader->LoadSuccess())
 		return;
 
 	Vector3 heightmapSize = hm->GetHeightmapSize();
+
+	bev = new Camera(-90.0f, 0, Vector3(heightmapSize.x * 0.6, heightmapSize.y * 20, heightmapSize.z * 0.5));
+
 	light = new Light(heightmapSize * Vector3(0.5f, 1.5f, 0.5f), Vector4(1.5, 1.5, 1.5, 10), heightmapSize.x * 1.5);
 
 	LoadAssets();
@@ -73,6 +74,10 @@ void Renderer::LoadTextures() {
 	cracksTex = SOIL_load_OGL_texture(CTEXTUREDIR"Cave_Cracks.png", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
 	poisonTex = SOIL_load_OGL_texture(CTEXTUREDIR"Cave_Poison.png", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
 
+	//barrelBase = SOIL_load_OGL_texture(CTEXTUREDIR"barrelBase.tif", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
+	//barrelNormal = SOIL_load_OGL_texture(CTEXTUREDIR"barrelNormal.tif", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
+	//barrelMetal = SOIL_load_OGL_texture(CTEXTUREDIR"barrelMetal.tif", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
+
 	//Night Galaxy
 	cubeMap = SOIL_load_OGL_cubemap(
 		CTEXTUREDIR"Left.jpg",
@@ -83,7 +88,7 @@ void Renderer::LoadTextures() {
 		CTEXTUREDIR"Back.jpg",
 		SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, 0);
 
-	if (!mapTex || !cubeMap || !waterTex || !mapBump || !glassTex || !cracksTex || !poisonTex)
+	if (!mapTex || !cubeMap || !waterTex || !mapBump || !glassTex || !cracksTex || !poisonTex)// || !barrelBase || !barrelNormal || !barrelMetal)
 		return;
 
 	SetTextureRepeating(mapTex, true);
@@ -99,6 +104,7 @@ void Renderer::LoadShaders() {
 	bumpShader = new Shader("BumpVertex.glsl", "bumpFragment.glsl");
 	mageShader = new Shader("SkinningVertex.glsl", "texturedFragment.glsl");
 	glassShader = new Shader("SceneVertex.glsl", "sceneFragment.glsl");
+	//barrelShader = new Shader("BarrelVertex.glsl", "barrelFrag.glsl");
 }
 
 void Renderer::LoadPostProcessing() {
@@ -203,6 +209,7 @@ void Renderer::LoadSceneGraph() {
 	rock3 = Mesh::LoadFromMeshFile("Coursework/Rocks/Rock3.msh");
 	rock4 = Mesh::LoadFromMeshFile("Coursework/Rocks/Rock4.msh");
 	rock5 = Mesh::LoadFromMeshFile("Coursework/Rocks/Rock5.msh");
+	//barrel = Mesh::LoadFromMeshFile("Coursework/barrel.msh");
 	cube = Mesh::LoadFromMeshFile("OffsetCubeY.msh");
 
 	SceneNode* refletCube = new SceneNode();
@@ -213,21 +220,31 @@ void Renderer::LoadSceneGraph() {
 	refletCube->SetBoundingRadius(1);
 	refletCube->SetModelScale(Vector3(25, 25, 25));
 
-	root->AddChild(rockParent);
+	//SceneNode* barrelObj = new SceneNode();
+	//barrelObj->SetMesh(barrel);
+	//barrelObj->SetShader(barrelShader);
+	//barrelObj->SetTexture(barrelBase);
+	//barrelObj->SetBumpTxtures(barrelNormal);
+	//barrelObj->SetMetalTexture(barrelMetal);
+	//barrelObj->SetTransform(Matrix4::Translation(Vector3(10, -5, 10)));
+	//barrelObj->SetModelScale(Vector3(10, 10, 10));
 
-	rockParent->AddChild(LoadRock(rock1, Vector4(1, 1, 1, 1), Vector3(100, 100, 100), Vector3(250, -100, 250), poisonTex, bumpShader));
-	rockParent->AddChild(LoadRock(rock2, Vector4(1, 1, 1, 1), Vector3(100, 100, 100), Vector3(500, -100, 0), cracksTex, bumpShader));
-	rockParent->AddChild(LoadRock(rock3, Vector4(1, 1, 1, 1), Vector3(100, 100, 100), Vector3(0, -100, 500), poisonTex, bumpShader));
-	rockParent->AddChild(LoadRock(rock4, Vector4(1, 1, 1, 1), Vector3(100, 100, 100), Vector3(-250, -100, 250), cracksTex, bumpShader));
-	rockParent->AddChild(LoadRock(rock5, Vector4(1, 1, 1, 1), Vector3(100, 100, 100), Vector3(250, -150, -250), poisonTex, bumpShader));
-	rockParent->AddChild(LoadRock(rock3, Vector4(1, 1, 1, 1), Vector3(100, 100, 100), Vector3(-500, -100, 0), cracksTex, bumpShader));
-	rockParent->AddChild(LoadRock(rock4, Vector4(1, 1, 1, 1), Vector3(100, 100, 100), Vector3(0, -100, -500), poisonTex, bumpShader));
+	root->AddChild(rockParent);
+	//rockParent->AddChild(barrelObj);
+
+	rockParent->AddChild(LoadRock(rock1, Vector4(5, 225, 0, 0.98f), Vector3(100, 100, 100), Vector3(250, -100, 250), cracksTex, 0, bumpShader));
+	rockParent->AddChild(LoadRock(rock2, Vector4(1, 1, 1, 1), Vector3(100, 100, 100), Vector3(500, -100, 0), cracksTex, 0, bumpShader));
+	rockParent->AddChild(LoadRock(rock3, Vector4(1, 1, 1, 1), Vector3(100, 100, 100), Vector3(0, -100, 500), poisonTex, 0, bumpShader));
+	rockParent->AddChild(LoadRock(rock4, Vector4(1, 1, 1, 1), Vector3(100, 100, 100), Vector3(-250, -100, 250), cracksTex, 0, bumpShader));
+	rockParent->AddChild(LoadRock(rock5, Vector4(1, 1, 1, 1), Vector3(100, 100, 100), Vector3(250, -150, -250), poisonTex, 0, bumpShader));
+	rockParent->AddChild(LoadRock(rock3, Vector4(1, 1, 1, 1), Vector3(100, 100, 100), Vector3(-500, -100, 0), cracksTex, 0, bumpShader));
+	rockParent->AddChild(LoadRock(rock4, Vector4(1, 1, 1, 1), Vector3(100, 100, 100), Vector3(0, -100, -500), poisonTex, 0, bumpShader));
 	rockParent->AddChild(refletCube);
 
 	//smallLight = new Light(Vector3((hmSize.x * 0.5) - 200, 250, (hmSize.z * 0.5) - 200), Vector4(70, 36, 183, 1), 50.0f);
 }
 
-SceneNode* Renderer::LoadRock(Mesh* mesh, Vector4 colour, Vector3 scale, Vector3 pos, GLuint tex, Shader* shader) {
+SceneNode* Renderer::LoadRock(Mesh* mesh, Vector4 colour, Vector3 scale, Vector3 pos, GLuint tex, GLuint bump, Shader* shader) {
 	SceneNode* s = new SceneNode();
 	s->SetMesh(mesh);
 	s->SetColour(colour);
@@ -236,6 +253,7 @@ SceneNode* Renderer::LoadRock(Mesh* mesh, Vector4 colour, Vector3 scale, Vector3
 	s->SetBoundingRadius(1);
 	s->SetTexture(tex);
 	s->SetShader(shader);
+	s->SetBumpTxtures(bump);
 	return s;
 }
 
@@ -299,7 +317,7 @@ void Renderer::UpdateScene(float dt) {
 		}
 	}
 
-	camera->UpdateCamera(dt * 20);
+	camera->UpdateCamera(dt * 20, true);
 	viewMatrix = camera->BuildViewMatrix();
 
 	frameFrustum.FromMatrix(projMatrix * viewMatrix);
@@ -317,25 +335,38 @@ void Renderer::UpdateScene(float dt) {
 	}
 
 	//Golem Animation
-	golemFrameTime -= dt;
-	while (golemFrameTime < 0.0f) {
-		golemCurrentFrame = (golemCurrentFrame + 1) % golemAnim->GetFrameCount();
-		golemFrameTime += 1.0f / golemAnim->GetFrameRate();
-	}
+	//golemFrameTime -= dt;
+	//while (golemFrameTime < 0.0f) {
+	//	golemCurrentFrame = (golemCurrentFrame + 1) % golemAnim->GetFrameCount();
+	//	golemFrameTime += 1.0f / golemAnim->GetFrameRate();
+	//}
+}
+
+void Renderer::RightScene() {
+	bev->UpdateCamera(0, false);
+	viewMatrix = bev->BuildViewMatrix();
 }
 
 void Renderer::RenderScene() {
+
+	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+	isBEV ? glViewport(0, 0, GetWidth() / 2, GetHeight()) : glViewport(0, 0, GetWidth(), GetHeight());
+
 	DrawScene();
 	if (isPostProcessing) {
 		DrawPostProcess();
 		PresentScene();
 	}
+
+	if (isBEV) {
+		glViewport(GetWidth() / 2, 0, GetWidth(), GetHeight());
+		RightScene();
+		DrawScene();
+	}
 }
 
 void Renderer::DrawScene() {
 	if (isPostProcessing) { glBindFramebuffer(GL_FRAMEBUFFER, bufferFBO); }
-	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-
 	BuildNodeLists(root);
 	SortNodeLists();
 
@@ -519,6 +550,26 @@ void Renderer::DrawNode(SceneNode* n) {
 
 		glUniform1i(glGetUniformLocation(shader->GetProgram(), "useTexture"), glassTex);
 		n->Draw(*this);
+		//if (n->HasBump() && n->HasMetal()) {
+		//	glUniform1i(glGetUniformLocation(shader->GetProgram(), "bumpTex"), 1);
+		//	//glUniform1i(glGetUniformLocation(shader->GetProgram(), "metalnessTex"), 2);
+		//	
+		//	GLuint tex = n->GetTexture();
+
+		//	glUniform3fv(glGetUniformLocation(shader->GetProgram(), "cameraPos"), 1, (float*)&camera->GetPosition());
+		//	glActiveTexture(GL_TEXTURE0);
+		//	glBindTexture(GL_TEXTURE_2D, n->GetTexture());
+
+		//	glActiveTexture(GL_TEXTURE1);
+		//	glBindTexture(GL_TEXTURE_2D, n->GetBumpTextures());
+
+		//	//glActiveTexture(GL_TEXTURE2);
+		//	//glBindTexture(GL_TEXTURE_2D, n->GetMetalTexture());
+
+		//}
+		//else {
+
+		//}
 	}
 }
 
@@ -526,7 +577,6 @@ void Renderer::DrawPostProcess() {
 	glBindFramebuffer(GL_FRAMEBUFFER, processFBO);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, bufferColourTex[1], 0);
 	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
-
 	BindShader(processShader);
 	modelMatrix.ToIdentity();
 	viewMatrix.ToIdentity();
@@ -598,6 +648,10 @@ void Renderer::TogglePostProcessing() {
 
 void Renderer::ToggleCamPerspective() {
 	isPerspective >= 1 ? isPerspective = 0 : isPerspective = 1;
+}
+
+void Renderer::ToggleBEV() {
+	isBEV >= 1 ? isBEV = 0 : isBEV = 1;
 }
 
 #pragma endregion

@@ -1,5 +1,6 @@
 #include "../NCLGL/window.h"
 #include "Renderer.h"
+#include <oleidl.h>
 
 int main()	{
 	Window w("Make your own project!", 1280, 720, false);
@@ -28,6 +29,9 @@ int main()	{
 		}
 		if (Window::GetKeyboard()->KeyDown(KEYBOARD_J) && Window::GetKeyboard()->KeyTriggered(KEYBOARD_J)) {
 			renderer.TogglePostProcessing();
+		}
+		if (Window::GetKeyboard()->KeyDown(KEYBOARD_M) && Window::GetKeyboard()->KeyTriggered(KEYBOARD_M)) {
+			renderer.ToggleBEV();
 		}
 	}
 	return 0;

@@ -57,6 +57,9 @@ public:
 
 	bool			HasInitialised() const;	
 	
+	int GetWidth() { return width; }
+	int GetHeight() { return height; }
+
 protected:
 	virtual void	Resize(int x, int y);	
 	void			UpdateShaderMatrices();
