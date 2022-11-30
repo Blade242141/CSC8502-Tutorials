@@ -54,6 +54,9 @@ public:
 	vector<GLuint> GetTextures() const { return textures; }
 	void SetTxtures(vector<GLuint> v) { textures = v; }
 
+	GLuint GetBumpTextures() const { return bumpTexture; }
+	void SetBumpTxtures(GLuint t) { bumpTexture = t; }
+
 	Shader* GetShader() const { return shader; }
 	void SetShader(Shader* s) { shader = s; }
 	bool HasShader() const { if (shader != nullptr) { return true; } else { return false; } }
@@ -64,6 +67,7 @@ protected:
 	float distanceFromCamera;
 	float boundingRadius;
 	GLuint texture;
+	GLuint bumpTexture;
 	Matrix4 worldTransform;
 	Matrix4 transform;
 	Vector3 modelScale;

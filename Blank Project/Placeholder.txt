@@ -1,0 +1,81 @@
+	reflectShader = new Shader("ReflectVertex.glsl", "reflectFragment.glsl");
+	skyboxShader = new Shader("SkyboxVertex.glsl", "skyboxFragment.glsl");
+	glassShader = new Shader("SceneVertex.glsl", "sceneFragment.glsl");
+
+	//snowManShader = new Shader("SkinningVertex.glsl", "texturedFragment.glsl");
+	//skellShader = new Shader("SkinningVertex.glsl", "texturedFragment.glsl");
+	//glowShader = new Shader("SceneVertex.glsl", "hdrFragment.glsl");
+
+
+void Renderer::SetUpTex() {
+
+	glassTex = SOIL_load_OGL_texture(TEXTUREDIR"stainedglass.tga", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
+	cracksTex = SOIL_load_OGL_texture(CTEXTUREDIR"Cave_Cracks.png", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
+	poisonTex = SOIL_load_OGL_texture(CTEXTUREDIR"Cave_Poison.png", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
+	//snowManTex = SOIL_load_OGL_texture(CTEXTUREDIR"Base_01.png", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
+	//snowManBump = SOIL_load_OGL_texture(CTEXTUREDIR"Snow Man_01_Body_Normal.png", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
+	//snowManSmoothness = SOIL_load_OGL_texture(CTEXTUREDIR"Snow Man_01_Body_MetallicSmoothness.png", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
+	//glowTex = SOIL_load_OGL_texture(TEXTUREDIR"purple.png", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
+
+
+	//Day Little Cloudy
+	//cubeMap = SOIL_load_OGL_cubemap(
+	//	CTEXTUREDIR"MLeft.png",
+	//	CTEXTUREDIR"MRight.png",
+	//	CTEXTUREDIR"MUp.png",
+	//	CTEXTUREDIR"MDown.png",
+	//	CTEXTUREDIR"MFront.png",
+	//	CTEXTUREDIR"MBack.png",
+	//	SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, 0)
+}
+
+
+void Renderer::UpdateScene(float dt) {
+	if (Window::GetKeyboard()->KeyDown(KEYBOARD_L))
+		std::cout << "x = " << camera->GetPosition().x << ", y = " << camera->GetPosition().y << ", z = " << camera->GetPosition().z << std::endl;
+
+
+	/*Skell was animated but the body mesh would not load correctly
+	//skellFrameTime -= dt;
+	//while (skellFrameTime < 0.0f) {
+	//	skellCurrentFrame = (skellCurrentFrame + 1) % skellAnim->GetFrameCount();
+	//	skellFrameTime += 1.0f / skellAnim->GetFrameRate();
+	//} */
+}
+
+void Renderer::RenderScene() {
+	//Drawskell();	//Mesh loads incorrectly, axes move but humanoid is not correct 
+=	//DrawObjs();	//Unable to get mesh to render on screen
+
+
+	//glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	//DrawPostProcess();
+	//PresentScene();
+
+}
+
+//void Renderer::DrawObjs() {
+//	BindShader(snowManShader);
+//	glUniform1i(glGetUniformLocation(snowManShader->GetProgram(), "diffuseTex"), 0);
+//	
+//	UpdateShaderMatrices();
+//
+//	vector<Matrix4> frameMatrices;
+//	const Matrix4* invBindPose = snowMan->GetMesh()->GetInverseBindPose();
+//
+//	for (unsigned int i = 0; i < snowMan->GetMesh()->GetJointCount(); ++i)
+//		frameMatrices.emplace_back(invBindPose[i]);
+//
+//	int j = glGetUniformLocation(snowManShader->GetProgram(), "joints");
+//	glUniformMatrix4fv(j, frameMatrices.size(), false, (float*)frameMatrices.data());
+//
+//	for (int i = 0; i < mage->GetSubMeshCount(); ++i) {
+//		glActiveTexture(GL_TEXTURE0);
+//		glBindTexture(GL_TEXTURE_2D, mageTextures[i]);
+//		snowMan->GetMesh()->DrawSubMesh(i);
+//	}
+//}
+
+
+
+

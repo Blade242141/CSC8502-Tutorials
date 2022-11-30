@@ -21,7 +21,13 @@ int main()	{
 			Shader::ReloadAllShaders();
 		}
 		if (Window::GetKeyboard()->KeyDown(KEYBOARD_K) && Window::GetKeyboard()->KeyTriggered(KEYBOARD_K)) {
-			//renderer.ToggleAutoCam();
+			renderer.ToggleAutoCam();
+		}
+		if (Window::GetKeyboard()->KeyDown(KEYBOARD_L) && Window::GetKeyboard()->KeyTriggered(KEYBOARD_L)) {
+			renderer.ToggleCamPerspective();
+		}
+		if (Window::GetKeyboard()->KeyDown(KEYBOARD_J) && Window::GetKeyboard()->KeyTriggered(KEYBOARD_J)) {
+			renderer.TogglePostProcessing();
 		}
 	}
 	return 0;
