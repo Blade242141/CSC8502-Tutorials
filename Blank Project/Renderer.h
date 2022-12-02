@@ -97,6 +97,9 @@ protected:
 	GLuint glassTex;
 	GLuint cubeTex;
 
+	//GLuint lavaRockTex;
+	//GLuint lavaRockNormalTex;
+
 	GLuint barrelBase;
 	GLuint barrelNormal;
 	GLuint barrelMetal;

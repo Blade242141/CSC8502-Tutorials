@@ -30,6 +30,16 @@ public:
 	float const GetPitch() { return pitch; }
 	void SetPitch(float p) { pitch = p; }
 
+	void MoveTowards(Vector3 v, float maxDistanceDelta) {
+		Vector3 a = v - position;
+		float magnitude = (a.x * a.x + a.y * a.y + a.z * a.z);
+		if (magnitude <= maxDistanceDelta || magnitude == 0.0f)
+			position = v;
+		else
+			position = position + a / magnitude * maxDistanceDelta;
+	}
+
+
 protected:
 	float yaw;
 	float pitch;

@@ -51,13 +51,45 @@ Renderer::Renderer(Window& parent) : OGLRenderer(parent) {
 
 Renderer::~Renderer(void) {
 	delete skyboxShader;
+	delete reflectShader;
 	delete sceneShader;
 	delete processShader;
-	delete reflectShader;
+	delete bumpShader;
+	delete mageShader;
+	delete glassShader;
+	delete golemShader;
 
-	delete hm;
-	delete quad;
+	delete barrelShader;
+
 	delete camera;
+	delete bev;
+
+	delete light;
+
+	delete root;
+	delete camPoints[5];
+
+	//Mesh* quad;
+	delete waterQuad;
+	delete hm;
+
+	delete glassQuad;
+	delete rock1;
+	delete rock2;
+	delete rock3;
+	delete rock4;
+	delete rock5;
+	delete cube;
+	delete quad;
+	delete barrel;
+
+	delete mageMesh;
+	delete mageAnim;
+	delete mageMat;
+
+	delete golemMesh;
+	delete golemAnim;
+	delete golemMat;
 
 	glDeleteTextures(2, bufferColourTex);
 	glDeleteTextures(1, &bufferDepthTex);
@@ -74,6 +106,10 @@ void Renderer::LoadTextures() {
 	cracksTex = SOIL_load_OGL_texture(CTEXTUREDIR"Cave_Cracks.png", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
 	poisonTex = SOIL_load_OGL_texture(CTEXTUREDIR"Cave_Poison.png", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
 
+	// Texters go black after loading and using this
+	//lavaRockTex = SOIL_load_OGL_texture(CTEXTUREDIR"LavaBase.png", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
+	//lavaRockNormalTex = SOIL_load_OGL_texture(CTEXTUREDIR"LavaNormal.png", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
+
 	//barrelBase = SOIL_load_OGL_texture(CTEXTUREDIR"barrelBase.tif", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
 	//barrelNormal = SOIL_load_OGL_texture(CTEXTUREDIR"barrelNormal.tif", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
 	//barrelMetal = SOIL_load_OGL_texture(CTEXTUREDIR"barrelMetal.tif", SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_MIPMAPS);
@@ -88,7 +124,7 @@ void Renderer::LoadTextures() {
 		CTEXTUREDIR"Back.jpg",
 		SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, 0);
 
-	if (!mapTex || !cubeMap || !waterTex || !mapBump || !glassTex || !cracksTex || !poisonTex)// || !barrelBase || !barrelNormal || !barrelMetal)
+	if (!mapTex || !cubeMap || !waterTex || !mapBump || !glassTex || !cracksTex || !poisonTex) // || !lavaRockTex || !lavaRockNormalTex)// || !barrelBase || !barrelNormal || !barrelMetal)
 		return;
 
 	SetTextureRepeating(mapTex, true);
@@ -239,6 +275,18 @@ void Renderer::LoadSceneGraph() {
 	rockParent->AddChild(LoadRock(rock5, Vector4(1, 1, 1, 1), Vector3(100, 100, 100), Vector3(250, -150, -250), poisonTex, 0, bumpShader));
 	rockParent->AddChild(LoadRock(rock3, Vector4(1, 1, 1, 1), Vector3(100, 100, 100), Vector3(-500, -100, 0), cracksTex, 0, bumpShader));
 	rockParent->AddChild(LoadRock(rock4, Vector4(1, 1, 1, 1), Vector3(100, 100, 100), Vector3(0, -100, -500), poisonTex, 0, bumpShader));
+
+	rockParent->AddChild(LoadRock(rock1, Vector4(1, 1, 1, 1), Vector3(90, 90, 90), Vector3(300, -100, -400), poisonTex, 0, bumpShader));
+	rockParent->AddChild(LoadRock(rock2, Vector4(1, 1, 1, 1), Vector3(75, 75, 75), Vector3(750, -100, 400), cracksTex, 0, bumpShader));
+	rockParent->AddChild(LoadRock(rock3, Vector4(1, 1, 1, 1), Vector3(100, 100, 100), Vector3(600, -100, -750), cracksTex, 0, bumpShader));
+	rockParent->AddChild(LoadRock(rock4, Vector4(1, 1, 1, 1), Vector3(80, 80, 80), Vector3(-1000, -100, 225), poisonTex, 0, bumpShader));
+	rockParent->AddChild(LoadRock(rock5, Vector4(1, 1, 1, 1), Vector3(120, 120, 120), Vector3(-600, -150, -600), cracksTex, 0, bumpShader));
+	rockParent->AddChild(LoadRock(rock2, Vector4(1, 1, 1, 1), Vector3(85, 85, 85), Vector3(-550, -100, 1000), poisonTex, 0, bumpShader));
+	rockParent->AddChild(LoadRock(rock1, Vector4(1, 1, 1, 1), Vector3(125, 125, 125), Vector3(0, -100, -1000), cracksTex, 0, bumpShader));
+	rockParent->AddChild(LoadRock(rock5, Vector4(1, 1, 1, 1), Vector3(300, 300, 300), Vector3(1000, -150, 1000), cracksTex, 0, bumpShader));
+	rockParent->AddChild(LoadRock(rock2, Vector4(1, 1, 1, 1), Vector3(200, 200, 200), Vector3(1000, -100, 500), poisonTex, 0, bumpShader));
+	rockParent->AddChild(LoadRock(rock1, Vector4(1, 1, 1, 1), Vector3(250, 250, 250), Vector3(500, -100, 1000), cracksTex, 0, bumpShader));
+	//rockParent->AddChild(LoadRock(rock1, Vector4(1, 1, 1, 1), Vector3(300, 300, 300), Vector3(1200, -100, 1200), lavaRockTex, lavaRockNormalTex, bumpShader));
 	rockParent->AddChild(refletCube);
 
 	//smallLight = new Light(Vector3((hmSize.x * 0.5) - 200, 250, (hmSize.z * 0.5) - 200), Vector4(70, 36, 183, 1), 50.0f);
@@ -275,9 +323,9 @@ void Renderer::LoadCameraPoints() {
 	point4->SetTransform(Matrix4::Translation(Vector3(7236.06f, 270.013f, 8187.66f)));
 	camPoints[3] = point4;
 
-	//SceneNode* point5 = new SceneNode();
-	//point5->SetTransform(Matrix4::Translation(orthPoint));
-	//camPoints[4] = point5;
+	SceneNode* point5 = new SceneNode();
+	point5->SetTransform(Matrix4::Translation(Vector3(7826.77f, 200, 7780.33f)));
+	camPoints[4] = point5;
 
 	root->AddChild(cameraPointParent);
 	cameraPointParent->AddChild(point1);
@@ -296,28 +344,42 @@ void Renderer::UpdateScene(float dt) {
 			timer = 20;
 		}
 
+		camera->UpdateCamera(0, false);
+
 		switch (camNo) {
 		case 0:
 			camera->SetPosition(camPoints[0]->GetTransform().GetPositionVector());
+			camera->SetPitch(-18.55);
+			camera->SetYaw(197.28);
 			break;
 		case 1:
 			camera->SetPosition(camPoints[1]->GetTransform().GetPositionVector());
+			//camera->MoveTowards(camPoints[1]->GetTransform().GetPositionVector(), dt/1000); // attempted to use Unity MoveTowards but it doesnt move correctly
+			camera->SetPitch(2.24);
+			camera->SetYaw(94.52);
 			break;
 		case 2:
 			camera->SetPosition(camPoints[2]->GetTransform().GetPositionVector());
+			camera->SetPitch(5.04);
+			camera->SetYaw(192.21);
 			break;
 		case 3:
 			camera->SetPosition(camPoints[3]->GetTransform().GetPositionVector());
+			camera->SetPitch(6.58);
+			camera->SetYaw(356.24);
 			break;
 		case 4:
 			camera->SetPosition(camPoints[4]->GetTransform().GetPositionVector());
+			camera->SetPitch(5.32);
+			camera->SetYaw(205.47);
 			break;
 		default:
 			camNo = 0;
 		}
 	}
-
-	camera->UpdateCamera(dt * 20, true);
+	else {
+		camera->UpdateCamera(dt * 20, true);
+	}
 	viewMatrix = camera->BuildViewMatrix();
 
 	frameFrustum.FromMatrix(projMatrix * viewMatrix);
@@ -334,6 +396,10 @@ void Renderer::UpdateScene(float dt) {
 		mageFrameTime += 1.0f / mageAnim->GetFrameRate();
 	}
 
+	if (Window::GetKeyboard()->KeyDown(KEYBOARD_P)) {
+		std::cout << "x = " << camera->GetPosition().x << ", y = " << camera->GetPosition().y << ", z = " << camera->GetPosition().z << std::endl;
+		std::cout << "pitch = " << camera->GetPitch() << ", yaw = " << camera->GetYaw() << std::endl;
+	}
 	//Golem Animation
 	//golemFrameTime -= dt;
 	//while (golemFrameTime < 0.0f) {
@@ -370,7 +436,7 @@ void Renderer::DrawScene() {
 	BuildNodeLists(root);
 	SortNodeLists();
 
-	DrawSkybox();
+	if (isPerspective) { DrawSkybox(); }
 	DrawMage();
 	//DrawGolem(); // Mesh wasnt loading correcly
 	DrawNodes();
@@ -448,7 +514,7 @@ void Renderer::DrawWater() {
 void Renderer::DrawMage() {
 	BindShader(mageShader);
 	glUniform1i(glGetUniformLocation(mageShader->GetProgram(), "diffuseTex"), 0);
-	modelMatrix = Matrix4::Translation(glassParentPos) * Matrix4::Scale(Vector3(100, 100, 100)) * Matrix4::Rotation(180, Vector3(0, 1, 0));
+	modelMatrix = Matrix4::Translation(Vector3(glassParentPos.x+200, glassParentPos.y - 90, glassParentPos.z+100)) * Matrix4::Scale(Vector3(75, 75, 75)) * Matrix4::Rotation(180, Vector3(0, 1, 0));
 
 	UpdateShaderMatrices();
 
@@ -539,16 +605,25 @@ void Renderer::DrawNode(SceneNode* n) {
 		UpdateShaderMatrices();
 		glUniform1i(glGetUniformLocation(shader->GetProgram(), "diffuseTex"), 0);
 
+		if (n->HasBump())
+			glUniform1i(glGetUniformLocation(shader->GetProgram(), "bumpTex"), 1);
+
 		Matrix4 model = n->GetWorldTransform() * Matrix4::Scale(n->GetModelScale());
 		glUniformMatrix4fv(glGetUniformLocation(shader->GetProgram(), "modelMatrix"), 1, false, model.values);
 
 		glUniform4fv(glGetUniformLocation(shader->GetProgram(), "nodeColour"), 1, (float*)&n->GetColour());
 
-		glassTex = n->GetTexture();
+		GLuint tex = n->GetTexture();
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, glassTex);
+		glBindTexture(GL_TEXTURE_2D, tex);
 
-		glUniform1i(glGetUniformLocation(shader->GetProgram(), "useTexture"), glassTex);
+		if (n->HasBump()) {
+			GLuint bumpTex = n->GetBumpTextures();
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_2D, bumpTex);
+		}
+
+		glUniform1i(glGetUniformLocation(shader->GetProgram(), "useTexture"), tex);
 		n->Draw(*this);
 		//if (n->HasBump() && n->HasMetal()) {
 		//	glUniform1i(glGetUniformLocation(shader->GetProgram(), "bumpTex"), 1);

@@ -56,12 +56,12 @@ public:
 
 	bool bump;
 	GLuint GetBumpTextures() const { return bumpTexture; }
-	void SetBumpTxtures(GLuint t) { bumpTexture = t; bump = true; }
+	void SetBumpTxtures(GLuint t) { bumpTexture = t; t != 0 ? bump = true : bump = false; }
 	bool HasBump() const { return bump; }
 
 	bool metal;
 	GLuint GetMetalTexture() const { return metalnessTexture; }
-	void SetMetalTexture(GLuint t) { metalnessTexture = t; metal = true; }
+	void SetMetalTexture(GLuint t) { metalnessTexture = t; t != 0 ? metal = true : metal = false; }
 	bool HasMetal() const { return metal; }
 
 
